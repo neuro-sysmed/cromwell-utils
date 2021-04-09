@@ -172,11 +172,13 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
     filter = {}
 
     if from_date is not None:
-        from_date = first_element_or_default(from_date)
+        if isinstance(from_date, list) and len(from_date):
+            from_date = from_date[0]
         filter['start'] = from_date
 
     if to_date is not None:
-        to_date = first_element_or_default(to_date)
+        if isinstance(to_date, list) and len(to_date):
+            to_date = to_date[0]
         filter['end'] = to_date
 
     if status is not None:
@@ -202,6 +204,10 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
 
     if query and filter != {}:
         data = [filter]
+    else:
+        data.append(filter)
+
+#    print(data)
 
     st = cromwell_api.workflows(data)
 

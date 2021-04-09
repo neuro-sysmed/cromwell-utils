@@ -4,9 +4,16 @@ import os
 import re
 import sys
 import argparse
+from datetime import datetime, timedelta
+import time
+
+import pytz
+
+
 import kbr.args_utils as args_utils
 import kbr.version_utils as version_utils
 import kbr.string_utils as string_utils
+import kbr.datetime_utils as datetime_utils
 
 
 sys.path.append('.')
@@ -90,7 +97,7 @@ def workflow_subcmd(commands) -> None:
 
 
 def workflows_subcmd(commands) -> None:
-    sub_commands = ['date', 'status', 'name', 'id', 'label', 'help']
+    sub_commands = ['days', 'status', 'name', 'id', 'label', 'help']
 
     if len(commands) == 0:
         commands.append('all')
@@ -99,11 +106,15 @@ def workflows_subcmd(commands) -> None:
 
     if sub_command == 'all':
         cromwell.workflows(as_json=as_json)
-    if sub_command == 'date':
+    elif sub_command == 'date':
         from_date = args_utils.get_or_fail(commands, "from date is required")
         to_date   = args_utils.get_or_default(commands, None)
 
         cromwell.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
+    elif sub_command == 'days':
+        days   = args_utils.get_or_default(commands, 7)
+        from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(days)) )
+        cromwell.workflows(from_date=from_date, as_json=as_json, query=True)
     elif sub_command == 'status':
         cromwell.workflows(status=commands, as_json=as_json)
     elif sub_command == 'name':
@@ -127,19 +138,50 @@ def workflows_subcmd(commands) -> None:
         print("==========================")
         print("workflows (all, default)")
         print("workflows date [from-date] <end-date>  ")
+        print("workflows days [days from now]")
         print("workflows status [status1, status2, ...]  ")
         print("workflows name [name1, name2, ...]")
         print("workflows id [id1, id2, ...]")
-        print("workflows label [label1, label2, ...]")
+        print("workflows days [nr of days, default=7]")
         print("workflows query f:[from-date] t:[to-date] s:[status] n:[name] i:[ids] l:[labels]")
         sys.exit(1)
 
 
 
+def monitor_subcmd(commands, interval:int=60) -> None:
+    sub_commands = ['all', 'days', 'status', 'name', 'id', 'label', 'help']
+
+    if len(commands) == 0 :
+        commands.append('all')
+
+    if commands[0] not in sub_commands or 'help' in commands:
+        if 'help' not in commands:
+            print(f"Error: Unknown command '{commands[0]}'\n")
+
+        print("Help:")
+        print("==========================")
+        print("monitor (all, default)")
+        print("monitor days [days from now]")
+        print("monitor status [status1, status2, ...]  ")
+        print("monitor name [name1, name2, ...]")
+        print("monitor id [id1, id2, ...]")
+        print("monitor label [label1, label2, ...]")
+        print("monitor query s:[status] n:[name] i:[ids] l:[labels]")
+        sys.exit(1)
+
+    tmp_commands = commands.copy()
+
+    while True:
+        os.system('clear')
+        print(datetime.now())
+        commands = tmp_commands.copy()
+        workflows_subcmd( commands )
+        time.sleep(int(interval))
+        continue
 
 def main():
 
-    commands = [ 'workflow', 'workflows', 'cromwell', 'help']
+    commands = [ 'workflow', 'workflows', 'cromwell', 'monitor', 'help']
 
     parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
 
@@ -147,6 +189,7 @@ def main():
                         default=args_utils.get_env_var('CROMWELL'))
     parser.add_argument('-j', '--json-output', help="print the outputs in json format",
                         action="store_true", default=False)
+    parser.add_argument('-i', '--interval', help="update interval when monitoring", default=60)
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
     parser.add_argument('command', nargs='*', help="{}".format(",".join(commands)))
 
@@ -166,6 +209,8 @@ def main():
         workflow_subcmd(args.command)
     elif command == 'workflows':
         workflows_subcmd(args.command)
+    elif command == 'monitor':
+        monitor_subcmd(args.command, args.interval)
     elif command == 'cromwell':
         cromwell_info()
     else:
