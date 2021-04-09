@@ -169,6 +169,9 @@ def monitor_subcmd(commands, interval:int=60) -> None:
         print("monitor query s:[status] n:[name] i:[ids] l:[labels]")
         sys.exit(1)
 
+    global as_json
+    as_json = False
+
     tmp_commands = commands.copy()
 
     while True:
