@@ -19,11 +19,11 @@ import kbr.datetime_utils as datetime_utils
 
 sys.path.append('.')
 
-import whittle.cromwell_api as cromwell_api
-import whittle.cromwell as cromwell
+import cromwell.api as cromwell_api
+import cromwell.utils as cromwell_utils
 
 
-version = version_utils.as_string('whittle')
+version = version_utils.as_string('cromwell')
 as_json = False
 
 def group_args(args) -> {}:
@@ -56,27 +56,27 @@ def workflow_subcmd(commands) -> None:
     sub_command = commands.pop(0)
 
     if sub_command == 'submit':
-        cromwell.submit_workflow(commands, as_json=as_json)
+        cromwell_utils.submit_workflow(commands, as_json=as_json)
     elif sub_command == 'batch':
-        cromwell.batch_submit_workflow(commands, as_json=as_json)
+        cromwell_utils.batch_submit_workflow(commands, as_json=as_json)
     elif sub_command == 'status':
-        cromwell.workflow_status(commands, as_json=as_json)
+        cromwell_utils.workflow_status(commands, as_json=as_json)
     elif sub_command == 'abort':
-        cromwell.workflow_abort(commands, as_json=as_json)
+        cromwell_utils.workflow_abort(commands, as_json=as_json)
     elif sub_command == 'logs':
-        cromwell.workflow_logs(commands, as_json=as_json)
+        cromwell_utils.workflow_logs(commands, as_json=as_json)
     elif sub_command == 'outputs':
-        cromwell.workflow_outputs(commands, as_json=as_json)
+        cromwell_utils.workflow_outputs(commands, as_json=as_json)
     elif sub_command == 'timing':
         sys.exit(10)
         print('not done yet, do we need this? outputs a html page')
-        cromwell.workflow_timing(commands, as_json=as_json)
+        cromwell_utils.workflow_timing(commands, as_json=as_json)
     elif sub_command == 'meta':
-        cromwell.workflow_meta(commands, as_json=as_json)
+        cromwell_utils.workflow_meta(commands, as_json=as_json)
     elif sub_command == 'labels':
         print('not done yet, do we need this?')
         sys.exit(10)
-        cromwell.labels(commands, as_json=as_json)
+        cromwell_utils.labels(commands, as_json=as_json)
     else:
         if sub_command != 'help':
             print(f"Error: Unknown command '{sub_command}'\n")
@@ -127,26 +127,26 @@ def workflows_subcmd(commands) -> None:
     sub_command = commands.pop(0)
 
     if sub_command == 'all':
-        data = cromwell.workflows(as_json=as_json)
+        data = cromwell_utils.workflows(as_json=as_json)
     elif sub_command == 'date':
         from_date = args_utils.get_or_fail(commands, "from date is required")
         to_date   = args_utils.get_or_default(commands, None)
 
-        data = cromwell.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
+        data = cromwell_utils.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
     elif sub_command == 'days':
         days   = args_utils.get_or_default(commands, 7)
         from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(days)) )
-        data = cromwell.workflows(from_date=from_date, as_json=as_json, query=True)
+        data = cromwell_utils.workflows(from_date=from_date, as_json=as_json, query=True)
     elif sub_command == 'status':
-        data = cromwell.workflows(status=commands, as_json=as_json)
+        data = cromwell_utils.workflows(status=commands, as_json=as_json)
     elif sub_command == 'name':
-        data = cromwell.workflows(names=commands, as_json=as_json)
+        data = cromwell_utils.workflows(names=commands, as_json=as_json)
     elif sub_command == 'id':
-        data = cromwell.workflows(ids=commands, as_json=as_json)
+        data = cromwell_utils.workflows(ids=commands, as_json=as_json)
     elif sub_command == 'query' or sub_command == 'q':
         args = group_args(commands)
 
-        data = cromwell.workflows( from_date=args.get("f", None),
+        data = cromwell_utils.workflows( from_date=args.get("f", None),
                             to_date=args.get("t", None),
                             status=args.get("s", None), 
                             names=args.get("n", None), 

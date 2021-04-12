@@ -19,12 +19,12 @@ import kbr.datetime_utils as datetime_utils
 
 sys.path.append('.')
 
-import whittle.cromwell_api as cromwell_api
-import whittle.cromwell as cromwell
+import cromwell.api as cromwell_api
+import cromwell.cromwell as cromwell
 
 
 
-version = version_utils.as_string('whittle')
+version = version_utils.as_string('cromwell')
 
 def _get_keys(data:dict, level:int) -> list:
 

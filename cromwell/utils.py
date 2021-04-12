@@ -6,7 +6,7 @@ import tabulate
 
 import kbr.args_utils as args_utils
 
-import whittle.cromwell_api as cromwell_api
+import cromwell.api as cromwell_api
 
 
 
