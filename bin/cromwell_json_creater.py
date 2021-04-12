@@ -49,45 +49,12 @@ def get_keys(data:dict, level:int) -> list:
     else:
         return dict(_get_keys(data, level))
 
-def nest_keys(data:dict, nest_level) -> dict:
-
-    data_nested = {}
 
 
-    for sub_part in data:
-        key_one = list(sub_data.keys())[0]
-        if len(sub_data.keys()) == 1 and len(sub_data[key_one].keys()) == 1:
-            print("Found one key")
-            print(sub_data.keys())
-            subkey_one = list(sub_data[key_one].keys())[0]
-            print(sub_data[ key_one ].keys()) 
-            new_key = f"{key_one}.{subkey_one}"
-            print(new_key)
-            data_fixed[ new_key ] = sub_data[ key_one ][ subkey_one ]
+def build_json(entries:list, workflow:str) -> dict:
 
-
-
-
-
-def main():
-
-    commands = [ 'workflow', 'workflows', 'cromwell', 'monitor', 'help']
-
-    parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
-
-    parser.add_argument('-w', '--workflow', help="Workflow name", required=True)
-    parser.add_argument('-p', '--pack-level', help="pack values under workflow", default=1, type=int)
-    parser.add_argument('-j', '--jsons-add', help="jsons to add under workflow")
-
-    parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
-    parser.add_argument('entries', nargs='*', help="{}".format(",".join(commands)))
-
-    args = parser.parse_args()
-
-    workflow = args.workflow
     data = {workflow:{}}
-
-    for entry in args.entries:
+    for entry in entries:
         path,value = entry.split("=")
         path_parts = path.split(".")
         sub_data = data[workflow]
@@ -108,6 +75,26 @@ def main():
         else:
             sub_data[path_part] = value
 
+    return data
+
+
+def main():
+
+    commands = [ 'workflow', 'workflows', 'cromwell', 'monitor', 'help']
+
+    parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
+
+    parser.add_argument('-w', '--workflow', help="Workflow name", required=True)
+    parser.add_argument('-p', '--pack-level', help="pack values under workflow", default=2, type=int)
+    parser.add_argument('-j', '--jsons-add', help="jsons to add under workflow")
+
+    parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
+    parser.add_argument('entries', nargs='*', help="{}".format(",".join(commands)))
+
+    args = parser.parse_args()
+
+    workflow = args.workflow
+    data= build_json(args.entries, workflow)
 
     pp.pprint(get_keys(data, args.pack_level))
 
