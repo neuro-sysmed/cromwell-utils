@@ -59,7 +59,12 @@ def build_json(entries:list, workflow:str) -> dict:
             path,value = entry.split("=")
         else:
             value = entry
-        path_parts = path.split(".")
+
+        try:
+            path_parts = path.split(".")
+        except:
+            print(f"Key not defined for {value}, eg: method.ref=ref_file1 ref_file2 etc")
+            sys.exit(1)
         sub_data = data[workflow]
 
         for path_part in path_parts:
@@ -81,29 +86,65 @@ def build_json(entries:list, workflow:str) -> dict:
     return data
 
 
-def main():
+def add_jsons(data:dict, jsons:list, workflow:str) -> dict:
 
-    commands = [ 'workflow', 'workflows', 'cromwell', 'monitor', 'help']
+    for json_file in jsons:
+
+        with open(json_file) as json_fh:
+            js = json.load(json_fh)
+            for k in js.keys():
+                if k not in data[workflow]:
+                    data[workflow][k] = {}
+                data[workflow][k] = js[k]
+        json_fh.close()
+
+
+
+    return data
+
+def serialise_jsons(jsons:[]) -> None:
+
+    data = []
+    for json_file in jsons:
+
+        with open(json_file) as json_fh:
+            js = json.load(json_fh)
+            data.append(js)
+
+    return data
+
+
+def main():
 
     parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
 
-    parser.add_argument('-w', '--workflow', help="Workflow name", required=True)
+    parser.add_argument('-c', '--create', action='store_true', help="create json")
+    parser.add_argument('-w', '--workflow', help="Workflow name")
     parser.add_argument('-p', '--pack-level', help="pack values under workflow", default=2, type=int)
-    parser.add_argument('-j', '--jsons-add', help="jsons to add under workflow")
+    parser.add_argument('-j', '--jsons', action='append', help="jsons to add under workflow")
+
+    parser.add_argument('-S', '--serialise', action='store_true', help="serialise jsons")
 
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
-    parser.add_argument('entries', nargs='*', help="{}".format(",".join(commands)))
+    parser.add_argument('-P', '--pretty-print', default=False, action="store_true", help="Pretty print of the json")
+    parser.add_argument('entries', nargs='*', help="Entries to build from or join")
 
     args = parser.parse_args()
 
-    workflow = args.workflow
-    data= build_json(args.entries, workflow)
+    if args.serialise:
+        data = serialise_jsons(args.entries)
+    else:
+        workflow = args.workflow
 
-    pp.pprint(get_keys(data, args.pack_level))
+        data = build_json(args.entries, workflow)
+        data = add_jsons(data, args.jsons, workflow )
+        data = get_keys(data, args.pack_level)
 
 
-    sys.exit()
-
+    if args.pretty_print:
+        pp.pprint(data)
+    else:
+        print(json.dumps(data))
 
 if __name__ == "__main__":
     main()
