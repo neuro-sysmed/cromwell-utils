@@ -55,7 +55,10 @@ def build_json(entries:list, workflow:str) -> dict:
 
     data = {workflow:{}}
     for entry in entries:
-        path,value = entry.split("=")
+        if '=' in entry:
+            path,value = entry.split("=")
+        else:
+            value = entry
         path_parts = path.split(".")
         sub_data = data[workflow]
 
