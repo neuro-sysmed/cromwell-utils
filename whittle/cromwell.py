@@ -227,6 +227,8 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
 
         sys.exit(10)
 
+    return jsons
+
     if as_json:
         print(json.dumps(jsons))
     else:

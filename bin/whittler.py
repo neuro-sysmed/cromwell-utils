@@ -6,9 +6,10 @@ import sys
 import argparse
 from datetime import datetime, timedelta
 import time
+import json
 
 import pytz
-
+import tabulate 
 
 import kbr.args_utils as args_utils
 import kbr.version_utils as version_utils
@@ -88,16 +89,37 @@ def workflow_subcmd(commands) -> None:
         print("workflow abort [job-ids]")
         print("workflow logs [job-ids]")
         print("workflow outputs [job-ids]")
-#        print("workflow timing [job-id]")
         print("workflow meta [job-ids]")
-#        print("workflow labels get [job-id]")
-#        print("workflow labels set [job-id] [label-jsonfile]")
         sys.exit(1)
+
+
+def print_workflows(data:[], as_json:bool=False, brief:bool=False) -> None:
+    counts = {}
+    for r in data:
+        name = r.get('name', 'NA')
+        status = r['status']
+        if name not in counts:
+            counts[name] = {}
+        if status not in counts[name]:
+            counts[name][status] = 0
+        counts[name][status] += 1
+
+    res = [['name', 'status', 'count']]
+    for name in counts:
+        for status in counts[name]:
+            res.append([name, status, counts[name][status]])
+
+    print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
 
 
 def workflows_subcmd(commands) -> None:
     sub_commands = ['days', 'status', 'name', 'id', 'label', 'help']
+
+    brief = False
+    if 'brief' in commands:
+        brief = True
+        del commands[ commands.index( 'brief')]
 
     if len(commands) == 0:
         commands.append('all')
@@ -105,26 +127,26 @@ def workflows_subcmd(commands) -> None:
     sub_command = commands.pop(0)
 
     if sub_command == 'all':
-        cromwell.workflows(as_json=as_json)
+        data = cromwell.workflows(as_json=as_json)
     elif sub_command == 'date':
         from_date = args_utils.get_or_fail(commands, "from date is required")
         to_date   = args_utils.get_or_default(commands, None)
 
-        cromwell.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
+        data = cromwell.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
     elif sub_command == 'days':
         days   = args_utils.get_or_default(commands, 7)
         from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(days)) )
-        cromwell.workflows(from_date=from_date, as_json=as_json, query=True)
+        data = cromwell.workflows(from_date=from_date, as_json=as_json, query=True)
     elif sub_command == 'status':
-        cromwell.workflows(status=commands, as_json=as_json)
+        data = cromwell.workflows(status=commands, as_json=as_json)
     elif sub_command == 'name':
-        cromwell.workflows(names=commands, as_json=as_json)
+        data = cromwell.workflows(names=commands, as_json=as_json)
     elif sub_command == 'id':
-        cromwell.workflows(ids=commands, as_json=as_json)
+        data = cromwell.workflows(ids=commands, as_json=as_json)
     elif sub_command == 'query' or sub_command == 'q':
         args = group_args(commands)
 
-        cromwell.workflows( from_date=args.get("f", None),
+        data = cromwell.workflows( from_date=args.get("f", None),
                             to_date=args.get("t", None),
                             status=args.get("s", None), 
                             names=args.get("n", None), 
@@ -146,10 +168,23 @@ def workflows_subcmd(commands) -> None:
         print("workflows query f:[from-date] t:[to-date] s:[status] n:[name] i:[ids] l:[labels]")
         sys.exit(1)
 
+    if as_json:
+        print(json.dumps(data))
+    elif brief:
+        print_workflows(data, as_json, brief)
+
+    else:
+        res = [["id", "name", "status", "submitted", "started", "ended"]]
+        for r in data:
+            res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA')])
+        print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
+
+
+
 
 
 def monitor_subcmd(commands, interval:int=60) -> None:
-    sub_commands = ['all', 'days', 'status', 'name', 'id', 'label', 'help']
+    sub_commands = ['all', 'days', 'status', 'name', 'id', 'label', 'brief', 'help']
 
     if len(commands) == 0 :
         commands.append('all')
