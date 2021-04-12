@@ -113,6 +113,20 @@ def serialise_jsons(jsons:[]) -> None:
 
     return data
 
+def print_data(data:dict, pretty_print:bool=False, outfile:str=None):
+    if pretty_print:
+        if outfile:
+            with open(outfile, "w") as outfile:
+                outfile.write(pp.pformat(data))
+        else:
+            pp.pprint(data)
+    else:
+        if outfile:
+            with open(outfile, 'w') as outfile:
+                json.dump(data, outfile)
+        else:
+            print(json.dumps(data))
+
 
 def main():
 
@@ -122,6 +136,7 @@ def main():
     parser.add_argument('-w', '--workflow', help="Workflow name")
     parser.add_argument('-p', '--pack-level', help="pack values under workflow", default=2, type=int)
     parser.add_argument('-j', '--jsons', action='append', help="jsons to add under workflow")
+    parser.add_argument('-o', '--outfile', help="File to write to, otherwise stdout")
 
     parser.add_argument('-S', '--serialise', action='store_true', help="serialise jsons")
 
@@ -141,10 +156,7 @@ def main():
         data = get_keys(data, args.pack_level)
 
 
-    if args.pretty_print:
-        pp.pprint(data)
-    else:
-        print(json.dumps(data))
+    print_data(data, args.pretty_print, args.outfile)
 
 if __name__ == "__main__":
     main()
