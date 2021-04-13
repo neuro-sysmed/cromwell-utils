@@ -74,9 +74,15 @@ def workflow_subcmd(commands) -> None:
     elif sub_command == 'meta':
         cromwell_utils.workflow_meta(commands, as_json=as_json)
     elif sub_command == 'labels':
-        print('not done yet, do we need this?')
-        sys.exit(10)
-        cromwell_utils.labels(commands, as_json=as_json)
+        sub_cmd = args_utils.get_or_fail(commands, "Need either get or set")
+        if sub_cmd == 'get':
+            cromwell_utils.workflow_labels_get(commands, as_json=as_json)
+        elif sub_cmd == 'set':
+            wf_id = args_utils.get_or_fail(commands, "workflow id is required")
+            cromwell_utils.workflow_labels_set(wf_id, commands)
+        else:
+            print("provide either get or set for workflow labels")
+
     else:
         if sub_command != 'help':
             print(f"Error: Unknown command '{sub_command}'\n")
@@ -88,6 +94,8 @@ def workflow_subcmd(commands) -> None:
         print("workflow status [job-ids]")
         print("workflow abort [job-ids]")
         print("workflow logs [job-ids]")
+        print("workflow labels get [job-ids]")
+        print("workflow labels set [job-ids] [labels]")
         print("workflow outputs [job-ids]")
         print("workflow meta [job-ids]")
         sys.exit(1)
@@ -147,6 +155,9 @@ def workflows_subcmd(commands) -> None:
         data = cromwell_utils.workflows(names=commands, as_json=as_json)
     elif sub_command == 'id':
         data = cromwell_utils.workflows(ids=commands, as_json=as_json)
+    elif sub_command == 'label':
+        data = cromwell_utils.workflows(labels=commands, as_json=as_json)
+
     elif sub_command == 'query' or sub_command == 'q':
         args = group_args(commands)
 
@@ -154,7 +165,8 @@ def workflows_subcmd(commands) -> None:
                             to_date=args.get("t", None),
                             status=args.get("s", None), 
                             names=args.get("n", None), 
-                            ids=args.get("i", None), query=True, as_json=as_json)
+                            ids=args.get("i", None), 
+                            labels=args.get("l", None), query=True, as_json=as_json)
     else:
         
         if sub_command != 'help':

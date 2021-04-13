@@ -119,7 +119,22 @@ def workflows_status(wf_id) -> []:
 
 def workflow_abort(wf_id) -> []:
     try:
-        r, _ = requests_utils.get(f"{protocol}://{base_url}/api/workflows/v1/{wf_id}/abort")
+        r, _ = requests_utils.post(f"{protocol}://{base_url}/api/workflows/v1/{wf_id}/abort")
+        return r
+    except HTTPError as e:
+        return handle_exception(wf_id, e.response.status_code)
+
+
+def workflow_labels_get(wf_id) -> []:
+    try:
+        r, _ = requests_utils.get(f"{protocol}://{base_url}/api/workflows/v1/{wf_id}/labels")
+        return r
+    except HTTPError as e:
+        return handle_exception(wf_id, e.response.status_code)
+
+def workflow_labels_set(wf_id, data:{}={}) -> []:
+    try:
+        r, _ = requests_utils.patch(f"{protocol}://{base_url}/api/workflows/v1/{wf_id}/labels", data=data)
         return r
     except HTTPError as e:
         return handle_exception(wf_id, e.response.status_code)

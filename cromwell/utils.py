@@ -1,5 +1,6 @@
 
 import re
+import os
 import sys
 import json
 import tabulate
@@ -99,6 +100,38 @@ def workflow_abort(args, as_json:bool=False) -> None:
         print(f'{st["id"]}\t{st["status"]}')
 
 
+def workflow_labels_get(args, as_json:bool=False) -> None:
+
+    args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
+    jsons = []
+
+    for wf_id in args:
+        st = cromwell_api.workflow_labels_get(wf_id)
+        if as_json:
+            jsons.append( st )
+        else:
+            for label in st['labels']:
+                if label != 'cromwell-workflow-id':
+                    print(f"{wf_id}\t{label}:{st['labels'][label]}")
+
+    if as_json:
+        print(json.dumps(jsons))
+
+def workflow_labels_set(wf_id:str, args:[], as_json:bool=False) -> None:
+
+    data  = {}
+    for label in args:
+        key, value = label.split(":")        
+        data[key] = value
+
+    st = cromwell_api.workflow_labels_set(wf_id, data)
+    if as_json:
+        jsons.append( st )
+    else:
+        for label in st['labels']:
+            if label != 'cromwell-workflow-id':
+                print(f"{wf_id}\t{label}:{st['labels'][label]}")
+
 def workflow_logs(args, as_json:bool=False) -> None:
 
     args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
@@ -166,7 +199,8 @@ def workflow_meta(args, as_json:bool=False) -> None:
     if as_json:
         print(json.dumps(jsons))
 
-def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=None, ids:[]=None, query:bool=False, as_json:bool=False) -> None:
+def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=None, ids:[]=None, labels:[]=None, 
+              query:bool=False, as_json:bool=False) -> None:
     data = []
 
     filter = {}
@@ -194,6 +228,13 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
         else:
             for nm in names:
                 data.append({'name': nm})
+
+    if labels is not None:
+        if query:
+            filter['label'] = first_element_or_default(labels)
+        else:
+            for label in labels:
+                data.append({'label': label})
 
     if ids is not None:
         if query:
