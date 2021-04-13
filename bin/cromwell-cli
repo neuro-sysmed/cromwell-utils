@@ -137,6 +137,10 @@ def workflows_subcmd(commands) -> None:
         days   = args_utils.get_or_default(commands, 7)
         from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(days)) )
         data = cromwell_utils.workflows(from_date=from_date, as_json=as_json, query=True)
+    elif sub_command == 'hours':
+        hours   = args_utils.get_or_default(commands, 1)
+        from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(hours)) )
+        data = cromwell_utils.workflows(from_date=from_date, as_json=as_json, query=True)
     elif sub_command == 'status':
         data = cromwell_utils.workflows(status=commands, as_json=as_json)
     elif sub_command == 'name':
@@ -161,6 +165,7 @@ def workflows_subcmd(commands) -> None:
         print("workflows (all, default)")
         print("workflows date [from-date] <end-date>  ")
         print("workflows days [days from now]")
+        print("workflows hours [hours from now]")
         print("workflows status [status1, status2, ...]  ")
         print("workflows name [name1, name2, ...]")
         print("workflows id [id1, id2, ...]")
@@ -184,7 +189,7 @@ def workflows_subcmd(commands) -> None:
 
 
 def monitor_subcmd(commands, interval:int=60) -> None:
-    sub_commands = ['all', 'days', 'status', 'name', 'id', 'label', 'brief', 'help']
+    sub_commands = ['all', 'days', 'hours','status', 'name', 'id', 'label', 'brief', 'help']
 
     if len(commands) == 0 :
         commands.append('all')
@@ -197,6 +202,7 @@ def monitor_subcmd(commands, interval:int=60) -> None:
         print("==========================")
         print("monitor (all, default)")
         print("monitor days [days from now]")
+        print("monitor hours [hours from now]")
         print("monitor status [status1, status2, ...]  ")
         print("monitor name [name1, name2, ...]")
         print("monitor id [id1, id2, ...]")
