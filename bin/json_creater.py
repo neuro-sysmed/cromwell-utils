@@ -20,7 +20,6 @@ import kbr.datetime_utils as datetime_utils
 sys.path.append('.')
 
 import cromwell.api as cromwell_api
-import cromwell.cromwell as cromwell
 
 
 

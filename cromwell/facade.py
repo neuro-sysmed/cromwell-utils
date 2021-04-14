@@ -275,3 +275,4 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
     else:
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
         
+

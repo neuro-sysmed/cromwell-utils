@@ -20,6 +20,7 @@ import kbr.datetime_utils as datetime_utils
 sys.path.append('.')
 
 import cromwell.api as cromwell_api
+import cromwell.facade as cromwell_facade
 import cromwell.utils as cromwell_utils
 
 
@@ -56,30 +57,30 @@ def workflow_subcmd(commands) -> None:
     sub_command = commands.pop(0)
 
     if sub_command == 'submit':
-        cromwell_utils.submit_workflow(commands, as_json=as_json)
+        cromwell_facade.submit_workflow(commands, as_json=as_json)
     elif sub_command == 'batch':
-        cromwell_utils.batch_submit_workflow(commands, as_json=as_json)
+        cromwell_facade.batch_submit_workflow(commands, as_json=as_json)
     elif sub_command == 'status':
-        cromwell_utils.workflow_status(commands, as_json=as_json)
+        cromwell_facade.workflow_status(commands, as_json=as_json)
     elif sub_command == 'abort':
-        cromwell_utils.workflow_abort(commands, as_json=as_json)
+        cromwell_facade.workflow_abort(commands, as_json=as_json)
     elif sub_command == 'logs':
-        cromwell_utils.workflow_logs(commands, as_json=as_json)
+        cromwell_facade.workflow_logs(commands, as_json=as_json)
     elif sub_command == 'outputs':
-        cromwell_utils.workflow_outputs(commands, as_json=as_json)
+        cromwell_facade.workflow_outputs(commands, as_json=as_json)
     elif sub_command == 'timing':
         sys.exit(10)
         print('not done yet, do we need this? outputs a html page')
-        cromwell_utils.workflow_timing(commands, as_json=as_json)
+        cromwell_facade.workflow_timing(commands, as_json=as_json)
     elif sub_command == 'meta':
-        cromwell_utils.workflow_meta(commands, as_json=as_json)
+        cromwell_facade.workflow_meta(commands, as_json=as_json)
     elif sub_command == 'labels':
         sub_cmd = args_utils.get_or_fail(commands, "Need either get or set")
         if sub_cmd == 'get':
-            cromwell_utils.workflow_labels_get(commands, as_json=as_json)
+            cromwell_facade.workflow_labels_get(commands, as_json=as_json)
         elif sub_cmd == 'set':
             wf_id = args_utils.get_or_fail(commands, "workflow id is required")
-            cromwell_utils.workflow_labels_set(wf_id, commands)
+            cromwell_facade.workflow_labels_set(wf_id, commands)
         else:
             print("provide either get or set for workflow labels")
 
@@ -135,33 +136,33 @@ def workflows_subcmd(commands) -> None:
     sub_command = commands.pop(0)
 
     if sub_command == 'all':
-        data = cromwell_utils.workflows(as_json=as_json)
+        data = cromwell_facade.workflows(as_json=as_json)
     elif sub_command == 'date':
         from_date = args_utils.get_or_fail(commands, "from date is required")
         to_date   = args_utils.get_or_default(commands, None)
 
-        data = cromwell_utils.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
+        data = cromwell_facade.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
     elif sub_command == 'days':
         days   = args_utils.get_or_default(commands, 7)
         from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(days)) )
-        data = cromwell_utils.workflows(from_date=from_date, as_json=as_json, query=True)
+        data = cromwell_facade.workflows(from_date=from_date, as_json=as_json, query=True)
     elif sub_command == 'hours':
         hours   = args_utils.get_or_default(commands, 1)
         from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(hours)) )
-        data = cromwell_utils.workflows(from_date=from_date, as_json=as_json, query=True)
+        data = cromwell_facade.workflows(from_date=from_date, as_json=as_json, query=True)
     elif sub_command == 'status':
-        data = cromwell_utils.workflows(status=commands, as_json=as_json)
+        data = cromwell_facade.workflows(status=commands, as_json=as_json)
     elif sub_command == 'name':
-        data = cromwell_utils.workflows(names=commands, as_json=as_json)
+        data = cromwell_facade.workflows(names=commands, as_json=as_json)
     elif sub_command == 'id':
-        data = cromwell_utils.workflows(ids=commands, as_json=as_json)
+        data = cromwell_facade.workflows(ids=commands, as_json=as_json)
     elif sub_command == 'label':
-        data = cromwell_utils.workflows(labels=commands, as_json=as_json)
+        data = cromwell_facade.workflows(labels=commands, as_json=as_json)
 
     elif sub_command == 'query' or sub_command == 'q':
         args = group_args(commands)
 
-        data = cromwell_utils.workflows( from_date=args.get("f", None),
+        data = cromwell_facade.workflows( from_date=args.get("f", None),
                             to_date=args.get("t", None),
                             status=args.get("s", None), 
                             names=args.get("n", None), 
@@ -198,6 +199,35 @@ def workflows_subcmd(commands) -> None:
 
 
 
+def utils_subcmd(commands, interval:int=60) -> None:
+    sub_commands = ['fix-import-path', 'f', 'help']
+
+    if len(commands) == 0 :
+        commands.append('help')
+
+    sub_command = commands.pop(0)
+
+    if sub_command == 'fix-import-path' or sub_command == 'f':
+        path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
+
+        files = cromwell_utils.find_files(path, "*.wdl$")
+        for filename in files:
+            cromwell_utils.patch_imports(filename, files)
+
+        
+
+#        patch
+
+
+    else:
+        
+        if sub_command != 'help':
+            print(f"Error: Unknown command '{sub_command}'\n")
+
+        print("Help:")
+        print("==========================")
+        print("utils fix-import-path [path to wdl dir]")
+        sys.exit(1)
 
 
 def monitor_subcmd(commands, interval:int=60) -> None:
@@ -237,7 +267,7 @@ def monitor_subcmd(commands, interval:int=60) -> None:
 
 def main():
 
-    commands = [ 'workflow', 'workflows', 'cromwell', 'monitor', 'help']
+    commands = [ 'workflow', 'workflows', 'monitor', 'utils', 'cromwell', 'help']
 
     parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
 
@@ -267,6 +297,8 @@ def main():
         workflows_subcmd(args.command)
     elif command == 'monitor':
         monitor_subcmd(args.command, args.interval)
+    elif command == 'utils':
+        utils_subcmd(args.command, args.interval)
     elif command == 'cromwell':
         cromwell_info()
     else:
