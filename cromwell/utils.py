@@ -4,6 +4,8 @@ import os
 import sys
 import shutil
 
+import kbr.file_utils as file_utils
+
 
 def find_files(path:str, pattern:str) -> []:
 
@@ -34,7 +36,6 @@ def patch_imports(wdlfile:str, files:{}) -> None:
     lines = []
     with open( filename, 'r') as fh:
         for line in fh.readlines():
-#            print(line)
             if line.startswith("import"):
                 g = re.match(r'import \"(.*)\"(.*)', line)
                 if (g):
@@ -45,9 +46,34 @@ def patch_imports(wdlfile:str, files:{}) -> None:
             lines.append(line)
         fh.close()
 
-    print("".join(lines))
-
     with  open(filename, 'w') as fh:
+        fh.write( "".join(lines) )
+        fh.close()
+
+
+def patch_version_location(path:str) -> None:
+    wdlfile = file_utils.find_first("Utils.wdl", path)
+    versionfile = file_utils.find_first("version.json", path)
+
+    shutil.copy( wdlfile, f"{wdlfile}.original")
+
+    versionfile = os.path.abspath(versionfile)
+
+    # open and read in the while file as a single string
+    lines = []
+    with open( wdlfile, 'r') as fh:
+        for line in fh.readlines():
+            g = re.match(r'(\s+String version_file\s*=\s*\")(.*?)(\".*)', line)
+            if (g):
+                prefix = g.group(1)
+                filepath = g.group(1)
+                postfix = g.group(3)
+                line = f'{prefix}{versionfile}{postfix}\n'
+            lines.append(line)
+        fh.close()
+
+
+    with  open(wdlfile, 'w') as fh:
         fh.write( "".join(lines) )
         fh.close()
 

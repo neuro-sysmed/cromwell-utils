@@ -15,6 +15,8 @@ import kbr.args_utils as args_utils
 import kbr.version_utils as version_utils
 import kbr.string_utils as string_utils
 import kbr.datetime_utils as datetime_utils
+import kbr.file_utils as file_utils
+
 
 
 sys.path.append('.')
@@ -210,13 +212,11 @@ def utils_subcmd(commands, interval:int=60) -> None:
     if sub_command == 'fix-import-path' or sub_command == 'f':
         path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
 
-        files = cromwell_utils.find_files(path, "*.wdl$")
+        files = cromwell_utils.find_files("*.wdl", path)
         for filename in files:
             cromwell_utils.patch_imports(filename, files)
 
-        
-
-#        patch
+        cromwell_utils.patch_version_location(path)
 
 
     else:
