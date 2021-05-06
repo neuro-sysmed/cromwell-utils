@@ -57,6 +57,10 @@ def workflow_subcmd(commands) -> None:
         commands.append('help')
 
     sub_command = commands.pop(0)
+    commands_map = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
+                    'o':'outputs', 't': 'timing', 'm':'meta', 'la': 'labels', 'h':'help'}
+    if sub_command in commands_map:
+        sub_command = commands_map[ sub_command ]
 
     if sub_command == 'submit':
         cromwell_facade.submit_workflow(commands, as_json=as_json)
@@ -132,10 +136,18 @@ def workflows_subcmd(commands) -> None:
         brief = True
         del commands[ commands.index( 'brief')]
 
+    if 'b' in commands:
+        brief = True
+        del commands[ commands.index( 'b')]
+
     if len(commands) == 0:
         commands.append('all')
 
     sub_command = commands.pop(0)
+    commands_map = {'d': 'days', 's': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'h':'help'}
+    if sub_command in commands_map:
+        sub_command = commands_map[ sub_command ]
+
 
     if sub_command == 'all':
         data = cromwell_facade.workflows(as_json=as_json)
@@ -211,6 +223,10 @@ def utils_subcmd(commands, interval:int=60) -> None:
     if len(commands) == 0 :
         commands.append('help')
     sub_command = commands.pop(0)
+
+    commands_map = {'p': 'purge', 'c': 'clean', 'h':'help'}
+    if sub_command in commands_map:
+        sub_command = commands_map[ sub_command ]
 
     if sub_command == 'cleanup' or sub_command == 'purge':
         value = args_utils.get_or_fail(command, "cleanup/purge requires either days or hours followed by a number, or an id")
@@ -312,6 +328,9 @@ def main():
 
     command = args.command.pop(0)
 
+    commands_map = {'wf': 'workflow', 'wfs': 'workflows', 'm': 'monitor', 'u':'utils', 'h':'help'}
+    if command in commands_map:
+        command = commands_map[ command ]
 
     if command == 'workflow':
         workflow_subcmd(args.command)
