@@ -281,7 +281,7 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
         
 
-def cleanup_workflow(action:str, id:str) -> None:
+def cleanup_workflow(action:str, wf_id:str) -> None:
     st = cromwell_api.workflow_outputs(wf_id)
     outputs = {}
 
