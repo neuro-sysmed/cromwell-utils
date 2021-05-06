@@ -284,10 +284,25 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
 def cleanup_workflow(action:str, id:str) -> None:
     st = cromwell_api.workflow_outputs(wf_id)
     outputs = {}
-    for output in st['outputs']:
-        output[output] = st['outputs'][output]
 
     meta = cromwell_api.workflow_meta(wf_id)
+    rootdir = meta.get('workflowRoot', None)
+    status  = meta.get('status', None)
+    start   = meta.get('start', None)
+    end     = meta.get('end', None)
+
+    for output in meta['outputs']:
+        outputs[ output ] = meta['outputs'][output]
+
+    for call in meta['calls']:
+        for shard in meta['calls'][call]:
+            shard_status = shard.get('status', None)
+            shard_start  = shard.get('start', None)
+            shard_end  = shard.get('start', None)
+            shard_rootdir = shard.get('callRoot', None)
+            shard_outputs = shard.get('outputs', {})
+
+            print( shard_status, shard_start, shard_end, shard_rootdir, shard_outputs)
 
 
 

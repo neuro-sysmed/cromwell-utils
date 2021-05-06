@@ -229,12 +229,12 @@ def utils_subcmd(commands, interval:int=60) -> None:
         sub_command = commands_map[ sub_command ]
 
     if sub_command == 'cleanup' or sub_command == 'purge':
-        value = args_utils.get_or_fail(command, "cleanup/purge requires either days or hours followed by a number, or an id")
+        value = args_utils.get_or_fail(commands, "cleanup/purge requires either days or hours followed by a number, or an id")
         if cromwell_utils.is_id(value):
             cromwell_utils.cleanup(action=sub_command, ids=[value] + commands)
 
         else:
-            time_span = int(args_utils.get_or_default(command, 2))
+            time_span = int(args_utils.get_or_default(commands, 2))
             cromwell_utils.cleanup(action=sub_command, time_type=value, time_span=time_span)
 
     elif sub_command == 'set-paths':
