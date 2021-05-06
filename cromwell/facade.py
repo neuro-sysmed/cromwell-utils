@@ -294,6 +294,14 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
     start   = meta.get('start', None)
     end     = meta.get('end', None)
 
+
+    if action == 'nuke':
+        try:
+            shutil.rmtree(rootdir)
+        except OSError as e:
+            print("Error: %s : %s" % (dir_path, e.strerror))
+        return
+
     for output in meta['outputs']:
         outputs[ output ] = meta['outputs'][output]
 
@@ -318,15 +326,10 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
 
             if action == 'tmpfiles':
                 delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
-            elif action == 'cleanup':
+            elif action == 'files':
                 delete_workflow_files( shard_rootdir, wf_keep_files)
-            elif action == 'nuke':
-                try:
-                    shutil.rmtree(shard_rootdir)
-                except OSError as e:
-                    print("Error: %s : %s" % (dir_path, e.strerror))
             else:
-                raise RuntimeError(f'{action} is an unknown cleanup action, allowed: cleanup or purge')
+                raise RuntimeError(f'{action} is an unknown cleanup action, allowed: tmpfiles, files or nuke')
 
 
 def delete_workflow_files(root_dir:str, keep_list:list) -> None:
