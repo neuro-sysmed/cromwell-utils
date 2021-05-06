@@ -87,6 +87,9 @@ def build_json(entries:list, workflow:str) -> dict:
 
 def add_jsons(data:dict, jsons:list, workflow:str) -> dict:
 
+    if jsons is None:
+        return data
+
     for json_file in jsons:
 
         with open(json_file) as json_fh:
@@ -127,6 +130,11 @@ def print_data(data:dict, pretty_print:bool=False, outfile:str=None):
             print(json.dumps(data))
 
 
+def print_help_example():
+    print("json_creater.py -w mapping_dna sample_and_unmapped_bams.sample=NA12878 sample_and_unmapped_bams.unmapped_bams=[NA12878]")
+
+
+
 def main():
 
     parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
@@ -141,12 +149,15 @@ def main():
 
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
     parser.add_argument('-P', '--pretty-print', default=False, action="store_true", help="Pretty print of the json")
-    parser.add_argument('entries', nargs='*', help="Entries to build from or join")
+    parser.add_argument('entries', nargs='*', help="Entries to build from or join, ")
 
     args = parser.parse_args()
 
     if args.serialise:
         data = serialise_jsons(args.entries)
+    elif args.entries == ["help"]:
+        parser.print_help()
+        print_help_example()
     else:
         workflow = args.workflow
 

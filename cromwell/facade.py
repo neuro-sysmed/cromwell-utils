@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import tabulate
+import pytz
 
 import kbr.args_utils as args_utils
 
@@ -257,8 +258,12 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
 
     if 'results' in st:
         for r in st['results']:
-            res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA')])
             jsons.append( r )
+
+            if 'parentWorkflowId' in r:
+                continue
+
+            res.append([ r['id'], r.get('name','NA'), r['status'], r.get('submission', 'NA'), r.get('start', 'NA'), r.get('end', 'NA')])
 
     else:
         if as_json:
@@ -276,3 +281,28 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
         
 
+def cleanup_workflow(action:str, id:str) -> None:
+    st = cromwell_api.workflow_outputs(wf_id)
+    outputs = {}
+    for output in st['outputs']:
+        output[output] = st['outputs'][output]
+
+    meta = cromwell_api.workflow_meta(wf_id)
+
+
+
+def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None) -> None:
+
+    if ids is None:
+        if time_type == 'days':
+            from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(time_span)) )
+        elif sub_command == 'hours':
+            from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
+        workflows = cromwell_facade.workflows(from_date=from_date, as_json=as_json, query=True)
+        ids = []
+        for workflow in workflows:
+            ids.append(workflow['id'])
+
+
+    for id in ids:
+        cleanup_workflow(action, id)

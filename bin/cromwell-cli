@@ -178,14 +178,15 @@ def workflows_subcmd(commands) -> None:
         print("Help:")
         print("==========================")
         print("workflows (all, default)")
-        print("workflows date [from-date] <end-date>  ")
-        print("workflows days [days from now]")
+
+        print("workflows days [nr of days, default=7]")
         print("workflows hours [hours from now]")
         print("workflows status [status1, status2, ...]  ")
         print("workflows name [name1, name2, ...]")
         print("workflows id [id1, id2, ...]")
-        print("workflows days [nr of days, default=7]")
+        print("workflows date [from-date] <end-date>  ")
         print("workflows query f:[from-date] t:[to-date] s:[status] n:[name] i:[ids] l:[labels]")
+
         sys.exit(1)
 
     if as_json:
@@ -196,28 +197,41 @@ def workflows_subcmd(commands) -> None:
     else:
         res = [["id", "name", "status", "submitted", "started", "ended"]]
         for r in data:
+            if 'parentWorkflowId' in r:
+                continue
+
             res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA')])
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
 
 
 def utils_subcmd(commands, interval:int=60) -> None:
-    sub_commands = ['fix-import-path', 'f', 'help']
+    sub_commands = ['purge', 'clean', 'set-paths', 'server-version', '', 'help']
 
     if len(commands) == 0 :
         commands.append('help')
-
     sub_command = commands.pop(0)
 
-    if sub_command == 'fix-import-path' or sub_command == 'f':
+    if sub_command == 'cleanup' or sub_command == 'purge':
+        value = args_utils.get_or_fail(command, "cleanup/purge requires either days or hours followed by a number, or an id")
+        if cromwell_utils.is_id(value):
+            cromwell_utils.cleanup(action=sub_command, ids=[value] + commands)
+
+        else:
+            time_span = int(args_utils.get_or_default(command, 2))
+            cromwell_utils.cleanup(action=sub_command, time_type=value, time_span=time_span)
+
+    elif sub_command == 'set-paths':
         path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
 
-        files = cromwell_utils.find_files("*.wdl", path)
+        
         for filename in files:
             cromwell_utils.patch_imports(filename, files)
 
         cromwell_utils.patch_version_location(path)
 
+    elif sub_command == 'server-version':
+        cromwell_info()
 
     else:
         
@@ -226,7 +240,15 @@ def utils_subcmd(commands, interval:int=60) -> None:
 
         print("Help:")
         print("==========================")
-        print("utils fix-import-path [path to wdl dir]")
+        print("utils cleanup [id(s)]")
+        print("utils cleanup hours [hours from now, default=2]")
+        print("utils cleanup days [days from now, default=2]")
+        print("utils purge [id(s)]")
+        print("utils purge hours [hours from now, default=2]")
+        print("utils purge days [days from now, default=2]")
+
+        print("utils set-paths [path to wdl dir]")
+        print("utils server-version ")
         sys.exit(1)
 
 
@@ -267,7 +289,7 @@ def monitor_subcmd(commands, interval:int=60) -> None:
 
 def main():
 
-    commands = [ 'workflow', 'workflows', 'monitor', 'utils', 'cromwell', 'help']
+    commands = [ 'workflow', 'workflows', 'monitor', 'utils', 'help']
 
     parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
 
@@ -299,8 +321,6 @@ def main():
         monitor_subcmd(args.command, args.interval)
     elif command == 'utils':
         utils_subcmd(args.command, args.interval)
-    elif command == 'cromwell':
-        cromwell_info()
     else:
         print("The tool support the following commands: {}\n".format(string_utils.comma_sep(commands)))
         parser.print_usage()
