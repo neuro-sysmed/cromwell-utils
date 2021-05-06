@@ -316,9 +316,9 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
 #                print( "Keeping call folder, not old enough!")
 #                continue
 
-            if action == 'cleanup':
+            if action == 'tmpfiles':
                 delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
-            elif action == 'purge':
+            elif action == 'results':
                 delete_workflow_files( shard_rootdir, wf_keep_files)
             elif action == 'nuke':
                 try:
