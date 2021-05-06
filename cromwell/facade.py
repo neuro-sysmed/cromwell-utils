@@ -7,6 +7,7 @@ import tabulate
 import pytz
 
 import kbr.args_utils as args_utils
+import kbr.datetime_utils as datetime_utils
 
 import cromwell.api as cromwell_api
 
@@ -294,10 +295,8 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
     for output in meta['outputs']:
         outputs[ output ] = meta['outputs'][output]
 
-    wf_keep_files = ["execution/rc","execution/stdout.submit",
-                     "execution/stderr.submit", "execution/script",
-                     "execution/stdout", "execution/stderr",
-                     "execution/script.submit" ]
+    wf_keep_files = ["rc","stdout.submit", "stderr.submit", "script",
+                     "stdout", "stderr", "script.submit" ]
 
 
     for call in meta['calls']:
@@ -308,17 +307,26 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
+            shard_end_ts = datetime_utils.string_to_datetime(shard_endtime)
+
+            # shard_status == 'Done' and 
+            if shard_end_ts < datetime.now(pytz.utc)- timedelta(days=2):
+               print( "Keeping call folder, not old enough!")
+               pass
+
 
             print( shard_status, shard_start, shard_end, shard_rootdir, shard_outputs)
             delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
 
 
 def delete_workflow_files(root_dir:str, keep_list:list) -> None:
+    if root_dir is None:
+        return 
 
     for root, dirs, files in os.walk(root_dir):
         for filename in files:
-            filename = os.path.abspath(filename)
-            if filename in keeplist:
+            filepath = f"{root}/{filename}"
+            if filename in keep_list or filepath in keep_list:
                 print(f"Keeping {filename}")
                 continue
 
