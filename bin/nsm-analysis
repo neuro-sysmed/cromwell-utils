@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+import argparse
+from datetime import datetime, timedelta
+import time
+import json
+import tempfile
+import getpass
+
+import pytz
+import tabulate 
+
+import kbr.args_utils as args_utils
+import kbr.version_utils as version_utils
+import kbr.string_utils as string_utils
+import kbr.datetime_utils as datetime_utils
+import kbr.file_utils as file_utils
+
+
+
+sys.path.append('.')
+
+import cromwell.api as cromwell_api
+import cromwell.facade as cromwell_facade
+import cromwell.utils as cromwell_utils
+import cromwell.json_utils as json_utils
+
+
+version = version_utils.as_string('cromwell')
+reference = "hg38"
+
+env = "development"
+
+wf_files = {'mapping_dna': '/home/brugger/projects/nsm/nsm-analysis/workflows/mapping_dna.wdl'}
+
+
+
+def set_reference(ref) -> None:
+    global reference
+    if ref == 'hg38':
+        reference = 'reference_hg38.json'
+    elif ref == 'hg37' or ref == 'hg19':
+        reference = 'reference_hg19.json'
+    elif os.path.isfile(ref):
+        reference = ref
+
+    return
+
+def group_args(args) -> {}:
+
+    res = {'':[]}
+    for arg in args:
+        m = re.match(r'(\w):(.+)', arg)
+        if m is not None:
+            k, v = m.group(1), m.group(2)
+            if k not in res:
+                res[ k ] = []
+            res[ k ].append(v)
+        else:
+            res[ 'rest' ].append(v)
+            
+    return res
+
+
+def write_tmp_json(data) -> str:
+
+    tmpfile = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    json.dump(data, tmpfile.file)
+    tmpfile.close()
+
+    return tmpfile.name
+
+def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+
+
+    if 'help' in args or 'h' in args:
+        print("Help:")
+        print("Exome/genome analysis from unaligned bams (ubams)")
+        print("==========================")
+        print("exome <sample-name> <input-files> [-r reference] ")
+        print("genome <sample-name> <input-files> [-r reference] [base-recalibration]")
+        sys.exit(1)
+
+
+    name = args_utils.get_or_fail(args, "Sample name is missing")
+    args_utils.min_count(1, len(args), msg="One or more ubams required.")
+
+    infiles = []
+    for arg in args:
+        if not re.match(r'^.*\.ubam', arg):
+            raise RuntimeError(f"{arg} have a wrong suffix, should be '.ubam'")
+        if not os.path.isfile(arg):
+            raise RuntimeError(f"cannot find {arg}")
+        arg = os.path.abspath(arg)
+        infiles.append(arg)
+
+    indata = [f'sample_and_unmapped_bams.sample_name={name}',
+              f'sample_and_unmapped_bams.unmapped_bams={infiles}', 
+              f"sample_and_unmapped_bams.base_filename={name}"]
+
+
+    if analysis == 'genome':
+        indata['WGS'] = True
+
+    if 'base-recalibration' in args:
+        indata['doBSQR'] = True
+        del commands[ commands.index( 'base-recalibration')]
+
+    data = json_utils.build_json(indata, "DNAPreprocessing")
+    print(reference)
+    data = json_utils.add_jsons(data, [reference], "DNAPreprocessing")
+    data = json_utils.pack(data, 2)
+    tmp_inputs = write_tmp_json( data )
+    
+    tmp_options = None
+    if outdir:
+        tmp_options = write_tmp_json({"final_workflow_outputs_dir": output})
+
+    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
+    print(wf_files['mapping_dna'], tmp_inputs, tmp_options, tmp_labels)
+
+    st = cromwell_api.submit_workflow(wf_files['mapping_dna'], [tmp_inputs], tmp_options, labels=tmp_labels)
+    print(f"{st['id']}: {st['status']}")
+
+
+def main():
+
+    commands = ['exome', 'call-variants', 'rnaseq', 'single-cell', 'genome', 'utils', 'help']
+
+    parser = argparse.ArgumentParser(description=f'nsm-analysis: command line tool for nsm-pipelines ({version})')
+
+    parser.add_argument('-c', '--config', help="NGA config file, or set env CROMWELL",
+                        default=args_utils.get_env_var('CROMWELL'))
+    parser.add_argument('-r', '--reference', help="reference to use: hg38(default), hg19", default="hg38")
+    parser.add_argument('-o', '--outdir', help="where to store results")
+    parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
+    parser.add_argument('command', nargs='*', help="{}".format(",".join(commands)))
+
+    args = parser.parse_args()
+
+    set_reference( args.reference )
+
+    args_utils.min_count(1, len(args.command),
+                         msg="nsm-analysis takes one of the following commands: {}".format(string_utils.comma_sep(commands)))
+
+    command = args.command.pop(0)
+
+    commands_map = {'e': 'exome', 'c': 'call-variants', 'r': 'rnaseq', 's': 'single-cell', 'g':'genome', 'u':'utils', 'h':'help'}
+    if command in commands_map:
+        command = commands_map[ command ]
+
+    if command == 'exome' or command == 'genome':
+        exome_subcmd(command, args.command)
+    elif command == 'call-variants':        
+        callvars_subcmd(args.command)
+    elif command == 'rnaseq':
+        rnaseq_subcmd(args.command)
+    elif command == 'single-cell':
+        singlecell_subcmd(args.command)
+    elif command == 'utils':
+        utils_subcmd(args.command)
+    else:
+        print("The tool support the following commands: {}\n".format(string_utils.comma_sep(commands)))
+        parser.print_usage()
+        parser.add_argument('command', nargs='+', help="{}".format(",".join(commands)))
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
