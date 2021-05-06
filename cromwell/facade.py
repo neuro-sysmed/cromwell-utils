@@ -318,7 +318,7 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
 
             if action == 'tmpfiles':
                 delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
-            elif action == 'results':
+            elif action == 'cleanup':
                 delete_workflow_files( shard_rootdir, wf_keep_files)
             elif action == 'nuke':
                 try:
