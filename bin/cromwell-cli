@@ -95,6 +95,7 @@ def workflow_subcmd(commands) -> None:
             print(f"Error: Unknown command '{sub_command}'\n")
 
         print("Help:")
+        print("Submit and interact with workflow(s)")
         print("==========================")
         print("workflow submit [wdl-file] i:[input-jsonfile(s)] o:[options-jsonfile] d:[dependency-zipfile] l:[label-jsonfile] ")
         print("workflow batch  [wdl-file] i:[input-jsonfile] o:[options-jsonfile] d:[dependency-zipfile] l:[label-jsonfile]")
@@ -188,6 +189,7 @@ def workflows_subcmd(commands) -> None:
             print(f"Error: Unknown command '{sub_command}'\n")
 
         print("Help:")
+        print("Fetches information/status for workflow(s), can be filtered in various ways")
         print("==========================")
         print("workflows (all, default)")
 
@@ -217,36 +219,66 @@ def workflows_subcmd(commands) -> None:
 
 
 
-def utils_subcmd(commands, interval:int=60) -> None:
-    sub_commands = ['purge', 'cleanup', 'set-paths', 'server-version', '', 'help']
+def cleanup_subcmd(commands) -> None:
+    sub_commands = ['tmpfile', 'cleanup', 'nuke', 'help']
 
     if len(commands) == 0 :
         commands.append('help')
     sub_command = commands.pop(0)
 
-    commands_map = {'p': 'purge', 'c': 'cleanup', 'h':'help'}
+    commands_map = {'t': 'tmpfiles', 'c': 'cleanup', 'h':'help'}
     if sub_command in commands_map:
         sub_command = commands_map[ sub_command ]
 
-    if sub_command == 'cleanup' or sub_command == 'purge':
+    if sub_command == 'cleanup' or sub_command == 'purge' or sub_command == 'nuke':
         value = args_utils.get_or_fail(commands, "cleanup/purge requires either days or hours followed by a number, or an id")
         if cromwell_utils.is_id(value):
             cromwell_facade.cleanup(action=sub_command, ids=[value] + commands)
-
         else:
             time_span = int(args_utils.get_or_default(commands, 2))
             cromwell_facade.cleanup(action=sub_command, time_type=value, time_span=time_span)
 
-    elif sub_command == 'set-paths':
+    else:
+        
+        if sub_command != 'help':
+            print(f"Error: Unknown command '{sub_command}'\n")
+
+        print("Help:")
+        print("Delete files created during workflow analysis")
+        print("==========================")
+        print("cleanup tmpfiles [id(s)] (various tmp files)")
+        print("cleanup tmpfiles hours [hours from now, default=2]")
+        print("cleanup tmpfiles days [days from now, default=2]")
+        print("cleanup results [id(s)] (tmp and results files)")
+        print("cleanup results hours [hours from now, default=2]")
+        print("cleanup results days [days from now, default=2]")
+        print("cleanup nuke [id(s)] (! everything from the analysis)")
+        print("cleanup nuke hours [hours from now, default=2]")
+        print("cleanup nuke days [days from now, default=2]")
+        sys.exit(1)
+
+
+
+def utils_subcmd(commands) -> None:
+    sub_commands = ['set-paths', 'ping', '', 'help']
+
+    if len(commands) == 0 :
+        commands.append('help')
+    sub_command = commands.pop(0)
+
+    commands_map = {'s':'set-paths', 'p': 'ping', 'h':'help'}
+    if sub_command in commands_map:
+        sub_command = commands_map[ sub_command ]
+
+    if sub_command == 'set-paths':
         path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
 
-        
         for filename in files:
             cromwell_utils.patch_imports(filename, files)
 
         cromwell_utils.patch_version_location(path)
 
-    elif sub_command == 'server-version':
+    elif sub_command == 'ping':
         cromwell_info()
 
     else:
@@ -255,16 +287,11 @@ def utils_subcmd(commands, interval:int=60) -> None:
             print(f"Error: Unknown command '{sub_command}'\n")
 
         print("Help:")
+        print("small utils that don't belong elsewhere")
         print("==========================")
-        print("utils cleanup [id(s)]")
-        print("utils cleanup hours [hours from now, default=2]")
-        print("utils cleanup days [days from now, default=2]")
-        print("utils purge [id(s)]")
-        print("utils purge hours [hours from now, default=2]")
-        print("utils purge days [days from now, default=2]")
 
         print("utils set-paths [path to wdl dir]")
-        print("utils server-version ")
+        print("utils ping (check server is a alive and what version is running) ")
         sys.exit(1)
 
 
@@ -279,6 +306,7 @@ def monitor_subcmd(commands, interval:int=60) -> None:
             print(f"Error: Unknown command '{commands[0]}'\n")
 
         print("Help:")
+        print("Like workflows, but continually updates the information")
         print("==========================")
         print("monitor (all, default)")
         print("monitor days [days from now]")
@@ -305,7 +333,7 @@ def monitor_subcmd(commands, interval:int=60) -> None:
 
 def main():
 
-    commands = [ 'workflow', 'workflows', 'monitor', 'utils', 'help']
+    commands = [ 'workflow', 'workflows', 'monitor', 'cleanup', 'utils', 'help']
 
     parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
 
@@ -328,7 +356,7 @@ def main():
 
     command = args.command.pop(0)
 
-    commands_map = {'wf': 'workflow', 'wfs': 'workflows', 'm': 'monitor', 'u':'utils', 'h':'help'}
+    commands_map = {'wf': 'workflow', 'wfs': 'workflows', 'm': 'monitor', 'c': 'cleanup', 'u':'utils', 'h':'help'}
     if command in commands_map:
         command = commands_map[ command ]
 
@@ -338,8 +366,10 @@ def main():
         workflows_subcmd(args.command)
     elif command == 'monitor':
         monitor_subcmd(args.command, args.interval)
+    elif command == 'cleanup':
+        cleanup_subcmd(args.command)
     elif command == 'utils':
-        utils_subcmd(args.command, args.interval)
+        utils_subcmd(args.command)
     else:
         print("The tool support the following commands: {}\n".format(string_utils.comma_sep(commands)))
         parser.print_usage()

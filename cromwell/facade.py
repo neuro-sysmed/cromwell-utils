@@ -1,9 +1,10 @@
 
 import re
 import os
-import shutils
+import shutil
 import sys
 import json
+from datetime import datetime, timedelta
 import tabulate
 import pytz
 
@@ -308,17 +309,18 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
-            shard_end_ts = datetime_utils.string_to_datetime(shard_end)
+#            shard_end_ts = datetime_utils.string_to_datetime(shard_end)
 
             # shard_status == 'Done' and 
-            if shard_end_ts < datetime.now()- timedelta(hours=24):
-                print( "Keeping call folder, not old enough!")
-                continue
+#            if shard_end_ts < datetime.now()- timedelta(hours=24):
+#                print( "Keeping call folder, not old enough!")
+#                continue
 
             if action == 'cleanup':
                 delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
             elif action == 'purge':
-
+                delete_workflow_files( shard_rootdir, wf_keep_files)
+            elif action == 'nuke':
                 try:
                     shutil.rmtree(shard_rootdir)
                 except OSError as e:
