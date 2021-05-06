@@ -79,20 +79,7 @@ def patch_version_location(path:str) -> None:
         fh.close()
 
 
-def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None) -> None:
-
-    if ids is None:
-        if time_type == 'days':
-            from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(time_span)) )
-        elif sub_command == 'hours':
-            from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
-        workflows = cromwell_facade.workflows(from_date=from_date, as_json=as_json, query=True)
-        ids = []
-        for workflow in workflows:
-            ids.append(workflow['id'])
-
-
-    for id in ids:
-        cleanup_workflow(action, id)
+def is_id(value:str) -> bool:
+    if re.match(r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}')
 
 

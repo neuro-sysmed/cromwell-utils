@@ -218,13 +218,13 @@ def workflows_subcmd(commands) -> None:
 
 
 def utils_subcmd(commands, interval:int=60) -> None:
-    sub_commands = ['purge', 'clean', 'set-paths', 'server-version', '', 'help']
+    sub_commands = ['purge', 'cleanup', 'set-paths', 'server-version', '', 'help']
 
     if len(commands) == 0 :
         commands.append('help')
     sub_command = commands.pop(0)
 
-    commands_map = {'p': 'purge', 'c': 'clean', 'h':'help'}
+    commands_map = {'p': 'purge', 'c': 'cleanup', 'h':'help'}
     if sub_command in commands_map:
         sub_command = commands_map[ sub_command ]
 
