@@ -294,16 +294,35 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
     for output in meta['outputs']:
         outputs[ output ] = meta['outputs'][output]
 
+    wf_keep_files = ["execution/rc","execution/stdout.submit",
+                     "execution/stderr.submit", "execution/script",
+                     "execution/stdout", "execution/stderr",
+                     "execution/script.submit" ]
+
+
     for call in meta['calls']:
         for shard in meta['calls'][call]:
-            shard_status = shard.get('status', None)
+            shard_status = shard.get('executionStatus', None)
             shard_start  = shard.get('start', None)
             shard_end  = shard.get('start', None)
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
-            print( shard_status, shard_start, shard_end, shard_rootdir, shard_outputs)
 
+            print( shard_status, shard_start, shard_end, shard_rootdir, shard_outputs)
+            delete_workflow_files( shard_rootdir, shard_outputs.values() + wf_keep_files)
+
+
+def delete_workflow_files(root_dir:str, keep_list:list) -> None:
+
+    for root, dirs, files in os.walk(root_dir):
+        for filename in files:
+            filename = os.path.abspath(filename)
+            if filename in keeplist:
+                print(f"Keeping {filename}")
+                continue
+
+            print(f"Deleting {filename}")
 
 
 def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None) -> None:
