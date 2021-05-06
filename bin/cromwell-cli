@@ -235,7 +235,7 @@ def utils_subcmd(commands, interval:int=60) -> None:
 
         else:
             time_span = int(args_utils.get_or_default(commands, 2))
-            cromwell_utils.cleanup(action=sub_command, time_type=value, time_span=time_span)
+            cromwell_facade.cleanup(action=sub_command, time_type=value, time_span=time_span)
 
     elif sub_command == 'set-paths':
         path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
