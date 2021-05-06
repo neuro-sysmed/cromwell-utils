@@ -220,7 +220,7 @@ def workflows_subcmd(commands) -> None:
 
 
 def cleanup_subcmd(commands) -> None:
-    sub_commands = ['tmpfile', 'cleanup', 'nuke', 'help']
+    sub_commands = ['tmpfiles', 'cleanup', 'nuke', 'help']
 
     if len(commands) == 0 :
         commands.append('help')
@@ -230,7 +230,7 @@ def cleanup_subcmd(commands) -> None:
     if sub_command in commands_map:
         sub_command = commands_map[ sub_command ]
 
-    if sub_command == 'cleanup' or sub_command == 'purge' or sub_command == 'nuke':
+    if sub_command == 'tmpfiles' or sub_command == 'cleanup' or sub_command == 'nuke':
         value = args_utils.get_or_fail(commands, "cleanup/purge requires either days or hours followed by a number, or an id")
         if cromwell_utils.is_id(value):
             cromwell_facade.cleanup(action=sub_command, ids=[value] + commands)
