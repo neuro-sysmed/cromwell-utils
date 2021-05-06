@@ -231,7 +231,7 @@ def utils_subcmd(commands, interval:int=60) -> None:
     if sub_command == 'cleanup' or sub_command == 'purge':
         value = args_utils.get_or_fail(commands, "cleanup/purge requires either days or hours followed by a number, or an id")
         if cromwell_utils.is_id(value):
-            cromwell_utils.cleanup(action=sub_command, ids=[value] + commands)
+            cromwell_facade.cleanup(action=sub_command, ids=[value] + commands)
 
         else:
             time_span = int(args_utils.get_or_default(commands, 2))
