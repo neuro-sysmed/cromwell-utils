@@ -284,7 +284,7 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
         
 
-def cleanup_workflow(action:str, wf_id:str) -> None:
+def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0) -> None:
     st = cromwell_api.workflow_outputs(wf_id)
     outputs = {}
 
@@ -300,6 +300,8 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
             shutil.rmtree(rootdir)
         except OSError as e:
             print("Error: %s : %s" % (dir_path, e.strerror))
+
+        print(f"Deleted everything in {rootdir}")
         return
 
     for output in meta['outputs']:
@@ -317,12 +319,14 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
-#            shard_end_ts = datetime_utils.string_to_datetime(shard_end)
 
-            # shard_status == 'Done' and 
-#            if shard_end_ts < datetime.now()- timedelta(hours=24):
-#                print( "Keeping call folder, not old enough!")
-#                continue
+            if done_only and  shard_status != 'Done':
+                print(f"keeping {shard_rootdir} as status is {shard_status} ")
+                continue
+
+            if shard_end_ts < datetime.now()- timedelta(hours=24):
+                print( "Keeping call folder, not old enough!")
+                continue
 
             if action == 'tmpfiles':
                 delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
