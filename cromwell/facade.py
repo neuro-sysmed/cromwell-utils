@@ -310,7 +310,7 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
 
 
             print( shard_status, shard_start, shard_end, shard_rootdir, shard_outputs)
-            delete_workflow_files( shard_rootdir, shard_outputs.values() + wf_keep_files)
+            delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
 
 
 def delete_workflow_files(root_dir:str, keep_list:list) -> None:
