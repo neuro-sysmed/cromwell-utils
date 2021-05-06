@@ -1,6 +1,7 @@
 
 import re
 import os
+import shutils
 import sys
 import json
 import tabulate
@@ -307,16 +308,23 @@ def cleanup_workflow(action:str, wf_id:str) -> None:
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
-            shard_end_ts = datetime_utils.string_to_datetime(shard_endtime)
+            shard_end_ts = datetime_utils.string_to_datetime(shard_end)
 
             # shard_status == 'Done' and 
-            if shard_end_ts < datetime.now(pytz.utc)- timedelta(days=2):
-               print( "Keeping call folder, not old enough!")
-               pass
+            if shard_end_ts < datetime.now()- timedelta(hours=24):
+                print( "Keeping call folder, not old enough!")
+                continue
 
+            if action == 'cleanup':
+                delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
+            elif action == 'purge':
 
-            print( shard_status, shard_start, shard_end, shard_rootdir, shard_outputs)
-            delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
+                try:
+                    shutil.rmtree(shard_rootdir)
+                except OSError as e:
+                    print("Error: %s : %s" % (dir_path, e.strerror))
+            else:
+                raise RuntimeError(f'{action} is an unknown cleanup action, allowed: cleanup or purge')
 
 
 def delete_workflow_files(root_dir:str, keep_list:list) -> None:
