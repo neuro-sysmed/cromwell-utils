@@ -339,6 +339,7 @@ def delete_workflow_files(root_dir:str, keep_list:list) -> None:
                 continue
 
             print(f"Deleting {filename}")
+            os.unlink(filepath)
 
 
 def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None) -> None:
