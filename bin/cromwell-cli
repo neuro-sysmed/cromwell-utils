@@ -20,6 +20,8 @@ import kbr.file_utils as file_utils
 
 
 sys.path.append('.')
+sys.path.append('/cluster/lib/python3.6/site-packages/')
+sys.path.append('/cluster/lib64/python3.6/site-packages/')
 
 import cromwell.api as cromwell_api
 import cromwell.facade as cromwell_facade
