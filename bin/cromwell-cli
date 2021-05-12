@@ -276,6 +276,7 @@ def utils_subcmd(commands) -> None:
     if sub_command == 'set-paths':
         path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
 
+        files = cromwell_utils.find_files(path, "*.wdl")
         for filename in files:
             cromwell_utils.patch_imports(filename, files)
 

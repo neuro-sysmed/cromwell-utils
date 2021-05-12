@@ -10,6 +10,10 @@ import json
 import tempfile
 import getpass
 
+sys.path.append('/cluster/lib/python3.6/site-packages/')
+sys.path.append('/cluster/lib64/python3.6/site-packages/')
+
+
 import pytz
 import tabulate 
 
