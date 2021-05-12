@@ -53,7 +53,7 @@ def patch_imports(wdlfile:str, files:{}) -> None:
 
 
 def patch_version_location(path:str) -> None:
-    wdlfile = file_utils.find_first("Utils.wdl", path)
+    wdlfile = file_utils.find_first("Versions.wdl", path)
     versionfile = file_utils.find_first("version.json", path)
 
     shutil.copy( wdlfile, f"{wdlfile}.original")
