@@ -30,7 +30,8 @@ def get_requirements():
     file_handle.close()
 
 
-    print( data )
+    print( f"Requiremnents:\n{data}" )
+#    print( data.split("\n"))
     return data.split("\n")
 #    return "{}.{}.{}".format( data['major'], data['minor'], data['patch'])
 
