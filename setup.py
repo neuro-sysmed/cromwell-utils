@@ -35,7 +35,16 @@ def get_requirements():
     return data.split("\n")
 #    return "{}.{}.{}".format( data['major'], data['minor'], data['patch'])
 
-def scripts(directory='bin/*') -> []:
+def scripts(directory='bin') -> []:
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith("~") or filename.endswith("__"):
+                continue
+            paths.append(os.path.join(path, filename))
+    print( paths )
+    return paths
+
     return glob.glob( directory )
 
 
