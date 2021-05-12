@@ -1,2 +1,2 @@
-kbr@git+https://github.com/brugger/kbr-tools.git
+kbr@git+https://github.com/brugger/kbr-tools.git#eggs-0
 pytz 
