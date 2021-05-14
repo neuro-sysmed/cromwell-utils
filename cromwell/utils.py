@@ -8,7 +8,7 @@ import pytz
 import kbr.file_utils as file_utils
 
 
-def find_files(path:str, pattern:str) -> []:
+def find_files(path:str, pattern:str) -> list:
 
     if pattern.startswith("*"):
         pattern = f".{pattern}"
@@ -27,7 +27,7 @@ def find_files(path:str, pattern:str) -> []:
     return files
 
 
-def patch_imports(wdlfile:str, files:{}) -> None:
+def patch_imports(wdlfile:str, files:dict) -> None:
 
     filename = files[ wdlfile ]
 

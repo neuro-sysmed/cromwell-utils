@@ -100,11 +100,9 @@ def add_jsons(data:dict, jsons:list, workflow:str) -> dict:
                 data[workflow][k] = js[k]
         json_fh.close()
 
-
-
     return data
 
-def serialise_jsons(jsons:[]) -> None:
+def serialise_jsons(jsons:list) -> None:
 
     data = []
     for json_file in jsons:
