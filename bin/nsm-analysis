@@ -102,8 +102,9 @@ def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:st
         infiles.append(arg)
 
     indata = [f'sample_and_unmapped_bams.sample_name={name}',
-              f'sample_and_unmapped_bams.unmapped_bams={infiles}', 
+              "sample_and_unmapped_bams.unmapped_bam_suffix=.ubam",
               f"sample_and_unmapped_bams.base_filename={name}"]
+
 
 
     if analysis == 'genome':
@@ -114,6 +115,12 @@ def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:st
         del commands[ commands.index( 'base-recalibration')]
 
     data = json_utils.build_json(indata, "DNAPreprocessing")
+
+    data["DNAPreprocessing"]['sample_and_unmapped_bams']['unmapped_bams'] = []
+    for infile in infiles:
+        data["DNAPreprocessing"]['sample_and_unmapped_bams']['unmapped_bams'].append( infile )
+
+
     print(reference)
     data = json_utils.add_jsons(data, [reference], "DNAPreprocessing")
     data = json_utils.pack(data, 2)
@@ -126,7 +133,7 @@ def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:st
     tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
     print(wf_files['mapping_dna'], tmp_inputs, tmp_options, tmp_labels)
 
-    st = cromwell_api.submit_workflow(wf_files['mapping_dna'], [tmp_inputs], tmp_options, labels=tmp_labels)
+    st = cromwell_api.submit_workflow(wdl_file=wf_files['mapping_dna'], inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency="/cluster/lib/nsm-analysis2/nsm-analysis.zip")
     print(f"{st['id']}: {st['status']}")
 
 
