@@ -21,6 +21,12 @@ def get_version():
     with open('version.json') as json_file:
         data = json.load(json_file)
 
+    if 'dev' in data and data['dev']:
+        return "{}.{}.{}-dev{}".format( data['major'], data['minor'], data['patch'], data['dev'])
+
+    if 'rc' in data and data['rc']:
+        return "{}.{}.{}-rc{}".format( data['major'], data['minor'], data['patch'], data['rc'])
+
     return "{}.{}.{}".format( data['major'], data['minor'], data['patch'])
 
 def get_requirements():
@@ -35,7 +41,7 @@ def get_requirements():
     return data.split("\n")
 #    return "{}.{}.{}".format( data['major'], data['minor'], data['patch'])
 
-def scripts(directory='bin') -> []:
+def get_scripts(directory='bin') -> list:
     paths = []
     for (path, directories, filenames) in os.walk(directory):
         for filename in filenames:
@@ -62,6 +68,6 @@ setup(name='cromwell-utils',
         'License :: MIT License',
         'Programming Language :: Python :: 3'
         ],      
-      scripts=scripts(),
+      scripts=get_scripts(),
       include_package_data=True,
       zip_safe=False)
