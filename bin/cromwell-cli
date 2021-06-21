@@ -263,7 +263,7 @@ def cleanup_subcmd(commands) -> None:
 
 
 def utils_subcmd(commands) -> None:
-    sub_commands = ['set-paths', 'ping', '', 'help']
+    sub_commands = ['set-paths', 'ping', 'pack', 'help']
 
     if len(commands) == 0 :
         commands.append('help')
@@ -285,6 +285,9 @@ def utils_subcmd(commands) -> None:
     elif sub_command == 'ping':
         cromwell_info()
 
+    elif sub_command == 'pack':
+        cromwell_utils.pack_dir()
+
     else:
         
         if sub_command != 'help':
@@ -295,6 +298,7 @@ def utils_subcmd(commands) -> None:
         print("==========================")
 
         print("utils set-paths [path to wdl dir]")
+        print("utils pack [path to wdl dir] [output-file.zip]")
         print("utils ping (check server is a alive and what version is running) ")
         sys.exit(1)
 
