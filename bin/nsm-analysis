@@ -14,8 +14,7 @@ sys.path.append('/cluster/lib/python3.6/site-packages/')
 sys.path.append('/cluster/lib64/python3.6/site-packages/')
 
 
-import pytz
-import tabulate 
+
 
 import kbr.args_utils as args_utils
 import kbr.version_utils as version_utils

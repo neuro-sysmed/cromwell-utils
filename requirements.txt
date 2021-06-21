@@ -1,2 +1,2 @@
 kbr@git+https://github.com/brugger/kbr-tools.git@2_0
-pytz 
+pytz
