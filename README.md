@@ -10,5 +10,5 @@ running the cromwell server
 
 ```
 cd <CROMWELL EXECUTION DIR>
-(nohup cromwell --java-options "-Dconfig.file=/cluster/lib/nsm-analysis/configs/cromwell_azure.conf " server &)
+(nohup cromwell --java-options "-Dconfig.file=/usr/local/lib/nsm-analysis/configs/cromwell_azure.conf " server  > cromwell.log 2>&1 &)
 ```
