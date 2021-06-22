@@ -58,7 +58,7 @@ def submit_workflow(wdl_file:str, inputs:list=[], options:str=None, dependency:s
     files = {'workflowSource': (wdl_file, open(wdl_file, 'rb'), 'application/octet-stream')}
 
     if inputs != []:
-        files[f'workflowInputs'] = (v, open(inputs[0], 'rb'), 'application/json')
+        files[f'workflowInputs'] = (inputs[0], open(inputs[0], 'rb'), 'application/json')
         for i, v in enumerate( inputs ):
             if i == 0:
                 continue

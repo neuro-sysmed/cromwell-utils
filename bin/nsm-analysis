@@ -5,13 +5,12 @@ import re
 import sys
 import argparse
 from datetime import datetime, timedelta
-import time
 import json
 import tempfile
 import getpass
 
-sys.path.append('/cluster/lib/python3.6/site-packages/')
-sys.path.append('/cluster/lib64/python3.6/site-packages/')
+#sys.path.append('/cluster/lib/python3.6/site-packages/')
+#sys.path.append('/cluster/lib64/python3.6/site-packages/')
 
 
 
@@ -38,12 +37,14 @@ reference = "hg38"
 
 env = "development"
 
-wf_files = {'mapping_dna': '/home/brugger/projects/nsm/nsm-analysis/workflows/mapping_dna.wdl'}
-wf_files = {'mapping_dna': '/cluster/lib/nsm-analysis2/workflows/mapping_dna.wdl',
-            'var_calling': '/cluster/lib/nsm-analysis2/workflows/variant_calling.wdl',
-            'bam-to-ubam': '/cluster/lib/nsm-analysis2/utils/bam_to_ubam.wdl',}
+nsm_root = '/usr/local/lib/nsm-analysis'
 
-nsm_zip  = "/cluster/lib/nsm-analysis/nsm-analysis.zip"
+wf_files = {'mapping_dna': '/home/brugger/projects/nsm/nsm-analysis/workflows/mapping_dna.wdl'}
+wf_files = {'mapping_dna': f'{nsm_root}/workflows/mapping_dna.wdl',
+            'var_calling': f'{nsm_root}/workflows/variant_calling.wdl',
+            'bam-to-ubam': f'{nsm_root}/utils/bam_to_ubam.wdl',}
+
+nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 
 
 def set_reference(ref) -> None:
@@ -116,7 +117,7 @@ def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:st
 
     if 'base-recalibration' in args:
         indata['doBSQR'] = True
-        del commands[ commands.index( 'base-recalibration')]
+        del args[ args.index( 'base-recalibration')]
 
     data = json_utils.build_json(indata, "DNAPreprocessing")
 
@@ -151,21 +152,18 @@ def utils_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> 
 
     if 'help' in args or 'h' in args or command != 'bam-to-ubam':
         print("Help:")
-        print("Pipelined utils )")
+        print("Pipelined utils")
         print("==========================")
         print("bam-to-ubam <bams>")
-#        print("fq-to-ubam")
         sys.exit(1)
 
-
-
-    indata = ["unmapped_bam_suffix=.ubam",
-              "mapped_bam_suffix=.bam",
-              "BamToUnalignedBam.outdir='.'"]
-
-
-    data = json_utils.build_json(indata, "BamToUnalignedBam")
-    data['bams'] = args
+    data = {"BamToUnalignedBam.unmapped_bam_suffix":'.ubam',
+             "BamToUnalignedBam.mapped_bam_suffix":'.bam',
+             "BamToUnalignedBam.outdir":".",
+             "BamToUnalignedBam.bams": []}
+    for arg in args:
+        data["BamToUnalignedBam.bams"].append( os.path.abspath( arg ))
+ 
     tmp_inputs = write_tmp_json( data )
     
     tmp_options = None
@@ -247,6 +245,7 @@ def main():
     parser.add_argument('-c', '--config', help="NGA config file, or set env CROMWELL",
                         default=args_utils.get_env_var('CROMWELL'))
     parser.add_argument('-r', '--reference', help="reference to use: hg38(default), hg19", default="hg38")
+    parser.add_argument('-n', '--nsm-analysis-root', help="location of nsm-analysis", default="/usr/local/lib/nsm-analysis")
     parser.add_argument('-o', '--outdir', help="where to store results")
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
     parser.add_argument('command', nargs='*', help="{}".format(",".join(commands)))
@@ -254,6 +253,10 @@ def main():
     args = parser.parse_args()
 
     set_reference( args.reference )
+
+    if args.nsm_analysis_root:
+        global nsm_analysis_root
+        nsm_analysis_root = args.nsm_analysis_root
 
 
     args_utils.min_count(1, len(args.command),

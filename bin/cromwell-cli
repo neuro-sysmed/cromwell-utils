@@ -286,7 +286,7 @@ def utils_subcmd(commands) -> None:
         cromwell_info()
 
     elif sub_command == 'pack':
-        cromwell_utils.pack_dir()
+        cromwell_utils.pack_dir(commands)
 
     else:
         

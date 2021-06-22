@@ -6,6 +6,7 @@ import shutil
 import pytz
 
 import kbr.file_utils as file_utils
+import kbr.run_utils as run_utils
 
 
 def find_files(path:str, pattern:str) -> list:
@@ -19,7 +20,7 @@ def find_files(path:str, pattern:str) -> list:
     for root, dirs, filenames in os.walk(path):
         for filename in filenames:
             if pattern.search(filename):
-                fullpath = os.path.abspath(f"{root}/{filename}")
+                fullpath = f"{root}/{filename}"
                 if filename in files:
                     raise RuntimeError(f'multiple wdl files with the same name: {filename} ')
                 files[ filename ] = fullpath
@@ -83,5 +84,11 @@ def is_id(value:str) -> bool:
     if re.match(r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', value):
         return True
     return False
+
+
+def pack_dir(filename:str, path:str=None):
+
+    cmd = f'zip {filename} workflows/*wdl tasks/*wdl utils/*wdl'
+    run_utils.launch_cmd(cmd, cwd=path)
 
 
