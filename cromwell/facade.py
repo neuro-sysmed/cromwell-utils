@@ -15,7 +15,7 @@ import cromwell.api as cromwell_api
 
 
 
-def group_args(args) -> {}:
+def group_args(args) -> dict:
 
     res = {'':[]}
     for arg in args:
@@ -121,7 +121,7 @@ def workflow_labels_get(args, as_json:bool=False) -> None:
     if as_json:
         print(json.dumps(jsons))
 
-def workflow_labels_set(wf_id:str, args:[], as_json:bool=False) -> None:
+def workflow_labels_set(wf_id:str, args:list, as_json:bool=False) -> None:
 
     data  = {}
     for label in args:
@@ -203,7 +203,7 @@ def workflow_meta(args, as_json:bool=False) -> None:
     if as_json:
         print(json.dumps(jsons))
 
-def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=None, ids:[]=None, labels:[]=None, 
+def workflows(from_date:str=None, to_date:str=None, status:list=None, names:list=None, ids:list=None, labels:list=None, 
               query:bool=False, as_json:bool=False, count:int=-1) -> None:
     data = []
 
