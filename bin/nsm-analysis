@@ -161,6 +161,7 @@ def utils_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> 
              "BamToUnalignedBam.mapped_bam_suffix":'.bam',
              "BamToUnalignedBam.outdir":".",
              "BamToUnalignedBam.bams": []}
+
     for arg in args:
         data["BamToUnalignedBam.bams"].append( os.path.abspath( arg ))
  

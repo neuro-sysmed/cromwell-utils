@@ -19,6 +19,7 @@ import kbr.version_utils as version_utils
 import kbr.string_utils as string_utils
 import kbr.datetime_utils as datetime_utils
 import kbr.file_utils as file_utils
+import kbr.args_utils as args_utils
 
 
 
@@ -54,16 +55,14 @@ def cromwell_info() -> None:
 
 
 def workflow_subcmd(commands) -> None:
-    sub_commands = ['submit', 'batch', 'status', 'abort', 'logs', 'outputs', 'timing', 'meta', 'labels', 'help']
+    sub_commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
+                    'o':'outputs', 't': 'timing', 'm':'meta', 'la': 'labels', 'h':'help'}
 
     if len(commands) == 0:
         commands.append('help')
 
     sub_command = commands.pop(0)
-    commands_map = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
-                    'o':'outputs', 't': 'timing', 'm':'meta', 'la': 'labels', 'h':'help'}
-    if sub_command in commands_map:
-        sub_command = commands_map[ sub_command ]
+    sub_command = args_utils.valid_command(sub_command, sub_commands)
 
     if sub_command == 'submit':
         cromwell_facade.submit_workflow(commands, as_json=as_json)
@@ -133,7 +132,7 @@ def print_workflows(data:list, as_json:bool=False, brief:bool=False) -> None:
 
 
 def workflows_subcmd(commands) -> None:
-    sub_commands = ['days', 'status', 'name', 'id', 'label', 'help']
+    sub_commands = {'d': 'days', 's': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'h':'help'}
 
     brief = False
     if 'brief' in commands:
@@ -148,10 +147,7 @@ def workflows_subcmd(commands) -> None:
         commands.append('all')
 
     sub_command = commands.pop(0)
-    commands_map = {'d': 'days', 's': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'h':'help'}
-    if sub_command in commands_map:
-        sub_command = commands_map[ sub_command ]
-
+    sub_command = args_utils.valid_command(sub_command, sub_commands)
 
     if sub_command == 'all':
         data = cromwell_facade.workflows(as_json=as_json)
@@ -223,15 +219,13 @@ def workflows_subcmd(commands) -> None:
 
 
 def cleanup_subcmd(commands) -> None:
-    sub_commands = ['tmpfiles', 'cleanup', 'nuke', 'help']
+    sub_commands = {'t': 'tmpfiles', 'c': 'files', 'n':'nuke', 'h':'help'}
 
     if len(commands) == 0 :
         commands.append('help')
-    sub_command = commands.pop(0)
 
-    commands_map = {'t': 'tmpfiles', 'c': 'files', 'h':'help'}
-    if sub_command in commands_map:
-        sub_command = commands_map[ sub_command ]
+    sub_command = commands.pop(0)
+    sub_command = args_utils.valid_command(sub_command, sub_commands)
 
     if sub_command == 'tmpfiles' or sub_command == 'cleanup' or sub_command == 'nuke':
         value = args_utils.get_or_fail(commands, "cleanup/purge requires either days or hours followed by a number, or an id")
@@ -255,7 +249,7 @@ def cleanup_subcmd(commands) -> None:
         print("cleanup files [id(s)] (tmp and results files)")
         print("cleanup files hours [hours from now, default=2]")
         print("cleanup files days [days from now, default=2]")
-        print("cleanup nuke [id(s)] (! everything from the analysis)")
+        print("cleanup nuke [id(s)] (everything from the analysis)")
         print("cleanup nuke hours [hours from now, default=2]")
         print("cleanup nuke days [days from now, default=2]")
         sys.exit(1)
@@ -263,24 +257,38 @@ def cleanup_subcmd(commands) -> None:
 
 
 def utils_subcmd(commands) -> None:
-    sub_commands = ['set-paths', 'ping', 'pack', 'help']
+    sub_commands = {'s':'set-paths', 'p':'patch-workflows','pi': 'ping', 'h':'help'}
+
 
     if len(commands) == 0 :
         commands.append('help')
     sub_command = commands.pop(0)
-
-    commands_map = {'s':'set-paths', 'p': 'ping', 'h':'help'}
-    if sub_command in commands_map:
-        sub_command = commands_map[ sub_command ]
+    sub_command = args_utils.valid_command(sub_command, sub_commands)
 
     if sub_command == 'set-paths':
         path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
 
         files = cromwell_utils.find_files(path, "*.wdl")
+        print( files )
         for filename in files:
             cromwell_utils.patch_imports(filename, files)
 
         cromwell_utils.patch_version_location(path)
+
+    elif sub_command == 'patch-workflows':
+
+        files = cromwell_utils.find_files("workflows", "*.wdl") 
+        print( files )
+        for filename in files:
+            cromwell_utils.patch_workflow_imports(filename, files)
+
+        files = cromwell_utils.find_files("utils", "*.wdl") 
+        print( files )
+        for filename in files:
+            cromwell_utils.patch_workflow_imports(filename, files)
+
+        cromwell_utils.patch_version_location(".")
+
 
     elif sub_command == 'ping':
         cromwell_info()
@@ -341,8 +349,7 @@ def monitor_subcmd(commands, interval:int=60) -> None:
 
 def main():
 
-    commands = [ 'workflow', 'workflows', 'monitor', 'cleanup', 'utils', 'help']
-
+    commands = {'wf': 'workflow', 'wfs': 'workflows', 'm': 'monitor', 'c': 'cleanup', 'u':'utils', 'h':'help'}
     parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
 
     parser.add_argument('-c', '--config', help="NGA config file, or set env CROMWELL",
@@ -360,13 +367,10 @@ def main():
         as_json = True
 
     args_utils.min_count(1, len(args.command),
-                         msg="nga-cli takes one of the following commands: {}".format(string_utils.comma_sep(commands)))
+                         msg="nga-cli takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
     command = args.command.pop(0)
-
-    commands_map = {'wf': 'workflow', 'wfs': 'workflows', 'm': 'monitor', 'c': 'cleanup', 'u':'utils', 'h':'help'}
-    if command in commands_map:
-        command = commands_map[ command ]
+    command = args_utils.valid_command(command, commands)
 
     if command == 'workflow':
         workflow_subcmd(args.command)
@@ -379,7 +383,7 @@ def main():
     elif command == 'utils':
         utils_subcmd(args.command)
     else:
-        print("The tool support the following commands: {}\n".format(string_utils.comma_sep(commands)))
+        print("The tool support the following commands: {}\n".format(args_utils.pretty_commands(commands)))
         parser.print_usage()
         parser.add_argument('command', nargs='+', help="{}".format(",".join(commands)))
         sys.exit(1)

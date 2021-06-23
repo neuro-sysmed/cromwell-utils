@@ -53,6 +53,30 @@ def patch_imports(wdlfile:str, files:dict) -> None:
         fh.close()
 
 
+def patch_workflow_imports(wdlfile:str, files:dict) -> None:
+
+    filename = files[ wdlfile ] 
+
+    shutil.copy( filename, f"{filename}.original")
+
+    # open and read in the while file as a single string
+    lines = []
+    with open( filename, 'r') as fh:
+        for line in fh.readlines():
+            if line.startswith("import"):
+                g = re.match(r'import \".*?(\/.*)\"(.*)', line)
+                if (g):
+                    import_file = g.group(1)
+                    rest = g.group(2)
+                    line = f'import ".{import_file}"{rest}\n'
+            lines.append(line)
+        fh.close()
+
+    with  open(filename, 'w') as fh:
+        fh.write( "".join(lines) )
+        fh.close()
+
+
 def patch_version_location(path:str) -> None:
     wdlfile = file_utils.find_first("Versions.wdl", path)
     versionfile = file_utils.find_first("version.json", path)
@@ -88,7 +112,7 @@ def is_id(value:str) -> bool:
 
 def pack_dir(filename:str, path:str=None):
 
-    cmd = f'zip {filename} workflows/*wdl tasks/*wdl utils/*wdl'
+    cmd = f'zip {filename} workflows/*wdl tasks/*wdl utils/*wdl structs/*wdl vars/*wdl version.json'
     run_utils.launch_cmd(cmd, cwd=path)
 
 
