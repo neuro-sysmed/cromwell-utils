@@ -257,7 +257,7 @@ def cleanup_subcmd(commands) -> None:
 
 
 def utils_subcmd(commands) -> None:
-    sub_commands = {'s':'set-paths', 'p':'patch-workflows','pi': 'ping', 'h':'help'}
+    sub_commands = {'s':'set-paths', 'p':'patch-workflows','pi': 'ping', 'z':'zip', 'h':'help'}
 
 
     if len(commands) == 0 :
@@ -293,8 +293,8 @@ def utils_subcmd(commands) -> None:
     elif sub_command == 'ping':
         cromwell_info()
 
-    elif sub_command == 'pack':
-        cromwell_utils.pack_dir(commands)
+    elif sub_command == 'zip':
+        cromwell_utils.pack_dir('nsm-analysis.zip')
 
     else:
         
