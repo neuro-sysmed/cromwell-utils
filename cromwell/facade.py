@@ -12,6 +12,7 @@ import kbr.args_utils as args_utils
 import kbr.datetime_utils as datetime_utils
 
 import cromwell.api as cromwell_api
+import cromwell.facade as cromwell_facade
 
 
 
@@ -130,7 +131,7 @@ def workflow_labels_set(wf_id:str, args:list, as_json:bool=False) -> None:
 
     st = cromwell_api.workflow_labels_set(wf_id, data)
     if as_json:
-        jsons.append( st )
+        print(json.dumps(st))
     else:
         for label in st['labels']:
             if label != 'cromwell-workflow-id':
@@ -302,7 +303,7 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
         try:
             shutil.rmtree(rootdir)
         except OSError as e:
-            print("Error: %s : %s" % (dir_path, e.strerror))
+            print("Error: %s : %s" % (rootdir, e.strerror))
 
         print(f"Deleted everything in {rootdir}")
         return
@@ -318,7 +319,7 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
         for shard in meta['calls'][call]:
             shard_status = shard.get('executionStatus', None)
             shard_start  = shard.get('start', None)
-            shard_end  = shard.get('start', None)
+            shard_end  = shard.get('end', None)
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
@@ -327,7 +328,7 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
                 print(f"keeping {shard_rootdir} as status is {shard_status} ")
                 continue
 
-            if shard_end_ts < datetime.now()- timedelta(hours=24):
+            if shard_end < datetime.now()- timedelta(hours=24):
                 print( "Keeping call folder, not old enough!")
                 continue
 
@@ -354,14 +355,14 @@ def delete_workflow_files(root_dir:str, keep_list:list) -> None:
             os.unlink(filepath)
 
 
-def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None) -> None:
+def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None, ) -> None:
 
     if ids is None:
         if time_type == 'days':
             from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(time_span)) )
-        elif sub_command == 'hours':
+        elif time_type == 'hours':
             from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
-        workflows = cromwell_facade.workflows(from_date=from_date, as_json=as_json, query=True)
+        workflows = cromwell_facade.workflows(from_date=from_date, as_json=True, query=True)
         ids = []
         for workflow in workflows:
             ids.append(workflow['id'])
