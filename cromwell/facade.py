@@ -204,7 +204,7 @@ def workflow_meta(args, as_json:bool=False) -> None:
         print(json.dumps(jsons))
 
 def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=None, ids:[]=None, labels:[]=None, 
-              query:bool=False, as_json:bool=False) -> None:
+              query:bool=False, as_json:bool=False, count:int=-1) -> None:
     data = []
 
     filter = {}
@@ -267,6 +267,9 @@ def workflows(from_date:str=None, to_date:str=None, status:[]=None, names:[]=Non
                 continue
 
             res.append([ r['id'], r.get('name','NA'), r['status'], r.get('submission', 'NA'), r.get('start', 'NA'), r.get('end', 'NA')])
+            count -= 1
+            if count == 0:
+                break
 
     else:
         if as_json:

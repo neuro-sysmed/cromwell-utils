@@ -132,7 +132,7 @@ def print_workflows(data:list, as_json:bool=False, brief:bool=False) -> None:
 
 
 def workflows_subcmd(commands) -> None:
-    sub_commands = {'d': 'days', 's': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'h':'help'}
+    sub_commands = {'a':'all', 'd': 'days', 's': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'h':'help'}
 
     brief = False
     if 'brief' in commands:
@@ -150,7 +150,8 @@ def workflows_subcmd(commands) -> None:
     sub_command = args_utils.valid_command(sub_command, sub_commands)
 
     if sub_command == 'all':
-        data = cromwell_facade.workflows(as_json=as_json)
+        count = args_utils.get_or_default(commands, 10)
+        data = cromwell_facade.workflows(as_json=as_json, count=count)
     elif sub_command == 'date':
         from_date = args_utils.get_or_fail(commands, "from date is required")
         to_date   = args_utils.get_or_default(commands, None)
@@ -190,7 +191,7 @@ def workflows_subcmd(commands) -> None:
         print("Help:")
         print("Fetches information/status for workflow(s), can be filtered in various ways")
         print("==========================")
-        print("workflows (all, default)")
+        print("workflows [count, default=10, -1 == all])")
 
         print("workflows days [nr of days, default=7]")
         print("workflows hours [hours from now]")
@@ -302,24 +303,26 @@ def utils_subcmd(commands) -> None:
             print(f"Error: Unknown command '{sub_command}'\n")
 
         print("Help:")
-        print("small utils that don't belong elsewhere")
+        print("utils that don't belong elsewhere")
         print("==========================")
+        print("utils patch-workflows: prepares files before zipping")
+        print("utils zip: compresses files so can be submitted")
 
         print("utils set-paths [path to wdl dir]")
-        print("utils pack [path to wdl dir] [output-file.zip]")
         print("utils ping (check server is a alive and what version is running) ")
         sys.exit(1)
 
 
 def monitor_subcmd(commands, interval:int=60) -> None:
-    sub_commands = ['all', 'days', 'hours','status', 'name', 'id', 'label', 'brief', 'help']
-
-    if len(commands) == 0 :
+    if len(commands) == 0:
         commands.append('all')
 
-    if commands[0] not in sub_commands or 'help' in commands:
-        if 'help' not in commands:
-            print(f"Error: Unknown command '{commands[0]}'\n")
+    sub_commands = {'a':'all', 'd':'days', 'h':'hours','h':'status', 'n':'name', 'i':'id', 'l':'label', 'h':'help'}
+
+    sub_command = commands.pop(0)
+    sub_command = args_utils.valid_command(sub_command, sub_commands)
+
+    if sub_command == 'help':
 
         print("Help:")
         print("Like workflows, but continually updates the information")
