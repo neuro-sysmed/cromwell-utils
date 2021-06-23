@@ -82,6 +82,27 @@ def write_tmp_json(data) -> str:
 
     return tmpfile.name
 
+
+def exomes_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+
+
+    if 'help' in args or 'h' in args:
+        print("Help:")
+        print("Exomes/genomes analysis from unaligned bams (ubams)")
+        print("==========================")
+        print("exome <input-files> [-r reference] ")
+        print("genome <input-files> [-r reference] [base-recalibration]")
+        sys.exit(1)
+
+
+    args_utils.min_count(1, len(args), msg="One or more ubams required.")
+
+    for arg in args:
+        sample_name = re.sub('\..*', '', arg)
+#        print( sample_name, arg)
+        exome_subcmd(analysis, [sample_name, arg], outdir=outdir)
+
+
 def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
 
 
@@ -239,7 +260,7 @@ def callvars_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix
 
 def main():
 
-    commands = {'e':'exome', 'v':'call-variants', 'r':'rnaseq', 's':'single-cell', 'g':'genome', 'u': 'utils', 'h': 'help'}
+    commands = {'e':'exome', 'es':'exomes','v':'call-variants', 'r':'rnaseq', 's':'single-cell', 'g':'genome', 'gs':'genomes','u': 'utils', 'h': 'help'}
 
     parser = argparse.ArgumentParser(description=f'nsm-analysis: command line tool for nsm-pipelines ({version})')
 
@@ -268,6 +289,8 @@ def main():
 
     if command == 'exome' or command == 'genome':
         exome_subcmd(command, args.command)
+    if command == 'exomes' or command == 'genomes':
+        exomes_subcmd(command, args.command)
     elif command == 'call-variants':        
         callvars_subcmd("exome", args.command)
     elif command == 'rnaseq':
