@@ -155,6 +155,7 @@ def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:st
     tmp_options = None
     if outdir is not None:
         tmp_options={"final_workflow_outputs_dir": outdir}
+        tmp_options = write_tmp_json(tmp_options)
 
 
     tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
@@ -288,9 +289,9 @@ def main():
     command = args_utils.valid_command(command, commands)
 
     if command == 'exome' or command == 'genome':
-        exome_subcmd(command, args.command)
+        exome_subcmd(command, args.command, outdir=args.outdir)
     if command == 'exomes' or command == 'genomes':
-        exomes_subcmd(command, args.command)
+        exomes_subcmd(command, args.command, outdir=args.outdir)
     elif command == 'call-variants':        
         callvars_subcmd("exome", args.command)
     elif command == 'rnaseq':
