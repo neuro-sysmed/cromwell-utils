@@ -56,7 +56,7 @@ def cromwell_info() -> None:
 
 def workflow_subcmd(commands) -> None:
     sub_commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
-                    'o':'outputs', 't': 'timing', 'm':'meta', 'la': 'labels', 'h':'help'}
+                    'o':'outputs', 't': 'timing', 'm':'meta', 'la': 'labels', 'e': 'export', 'h':'help'}
 
     if len(commands) == 0:
         commands.append('help')
@@ -76,6 +76,8 @@ def workflow_subcmd(commands) -> None:
         cromwell_facade.workflow_logs(commands, as_json=as_json)
     elif sub_command == 'outputs':
         cromwell_facade.workflow_outputs(commands, as_json=as_json)
+    elif sub_command == 'export':
+        cromwell_facade.export_workflow_outputs(commands)
     elif sub_command == 'timing':
         sys.exit(10)
         print('not done yet, do we need this? outputs a html page')

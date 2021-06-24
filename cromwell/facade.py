@@ -156,7 +156,7 @@ def workflow_logs(args, as_json:bool=False) -> None:
     if as_json:
         print(json.dumps(jsons))
 
-def workflow_outputs(args, as_json:bool=False) -> None:
+def workflow_outputs(args:list, as_json:bool=False) -> None:
 
     args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
     jsons = []
@@ -172,6 +172,38 @@ def workflow_outputs(args, as_json:bool=False) -> None:
 
     if as_json:
         print(json.dumps(jsons))
+
+
+
+def export_workflow_outputs(args:list, outdir:str=".") -> None:
+
+    args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
+    for wf_id in args:
+        st = cromwell_api.workflow_outputs(wf_id)
+        if 'status' in st:
+            print(f'Cannot export output files for {st["id"]} as status is {st["status"]}')
+        else:
+            os.makedirs(f"{outdir}/qc/", exist_ok=True)
+            os.makedirs(f"{outdir}/bams/", exist_ok=True)
+            os.makedirs(f"{outdir}/vcfs/", exist_ok=True)
+            for output in st['outputs']:
+                _, name = output.split(".")
+                if not isinstance(st['outputs'][output], list):
+                    st['outputs'][output] = [st['outputs'][output]]
+                for of in st['outputs'][output]:
+                    print( of )
+                    if of is None:
+                        continue
+                    outfile = re.sub(r'.*\/', '', of)
+                    if name.startswith("qc"):
+                        shutil.copy(of, f"{outdir}/qc/{outfile}")
+                    elif "vcf" in name:
+                        shutil.copy(of, f"{outdir}/vcfs/{outfile}")
+                    elif "bam" in  name:
+                        shutil.copy(of, f"{outdir}/bams/{outfile}")
+                    else:
+                        shutil.copy(of, f"{outdir}/{outfile}")
+
 
 def workflow_meta(args, as_json:bool=False) -> None:
 
