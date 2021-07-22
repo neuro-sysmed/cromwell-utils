@@ -193,13 +193,13 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
     rev_reads = args_utils.get_or_default(args, None)
 
 
-    indata = {f'Salmon.sample_name={name}',
-              f"Salmon.fwd_reads={fwd_reads}",
-              f"Salmon.threads=6",
-              f"Salmon.reference={reference}"}
+    indata = {'Salmon.sample_name': name,
+              "Salmon.fwd_reads": fwd_reads",
+              "Salmon.threads": 6,
+              "Salmon.reference": reference}
 
     if rev_reads is not None:
-        indata.append(f"Salmon.rev_reads={rev_reads}")
+        indata["Salmon.rev_reads"] = rev_reads
 
     tmp_inputs = write_tmp_json( indata )
     

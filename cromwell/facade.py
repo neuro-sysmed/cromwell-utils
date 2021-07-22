@@ -12,7 +12,6 @@ import kbr.args_utils as args_utils
 import kbr.datetime_utils as datetime_utils
 
 import cromwell.api as cromwell_api
-import cromwell.facade as cromwell_facade
 
 
 
@@ -402,7 +401,7 @@ def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None, )
             from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(time_span)) )
         elif time_type == 'hours':
             from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
-        workflows = cromwell_facade.workflows(from_date=from_date, as_json=True, query=True)
+        workflows = workflows(from_date=from_date, as_json=True, query=True)
         ids = []
         for workflow in workflows:
             ids.append(workflow['id'])
