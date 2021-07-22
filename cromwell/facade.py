@@ -346,12 +346,20 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
     wf_keep_files = ["rc","stdout.submit", "stderr.submit", "script",
                      "stdout", "stderr", "script.submit" ]
 
+    kf = cromwell_api.workflow_outputs(wf_id)
+    keep_files = []
+    for kf in list(kf['outputs'].values()):
+        if isinstance(kf, list):
+            keep_files += list(kf)
+        elif kf is not None:
+            keep_files.append( kf )
+
 
     for call in meta['calls']:
         for shard in meta['calls'][call]:
             shard_status = shard.get('executionStatus', None)
             shard_start  = shard.get('start', None)
-            shard_end  = shard.get('end', None)
+            shard_end  = datetime_utils.to_string( shard.get('end', None) )
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
@@ -365,7 +373,7 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
                 continue
 
             if action == 'tmpfiles':
-                delete_workflow_files( shard_rootdir, list(shard_outputs.values()) + wf_keep_files)
+                delete_workflow_files( shard_rootdir, list(keep_files + wf_keep_files))
             elif action == 'files':
                 delete_workflow_files( shard_rootdir, wf_keep_files)
             else:
