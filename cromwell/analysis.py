@@ -194,12 +194,12 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
 
 
     indata = {'Salmon.sample_name': name,
-              "Salmon.fwd_reads": fwd_reads,
+              "Salmon.fwd_reads": os.path.abspath(fwd_reads),
               "Salmon.threads": 6,
               "Salmon.reference_dir": reference}
 
     if rev_reads is not None:
-        indata["Salmon.rev_reads"] = rev_reads
+        indata["Salmon.rev_reads"] = os.path.abspath(rev_reads)
 
     tmp_inputs = write_tmp_json( indata )
     
