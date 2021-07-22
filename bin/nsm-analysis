@@ -65,7 +65,7 @@ def init(config:dict) -> None:
         reference = f'{reference_dir}reference_hg38.json'
     elif config.reference == 'hg37' or config.reference == 'hg19':
         reference = f'{reference_dir}reference_hg19.json'
-    elif os.path.isfile(config.reference):
+    elif os.path.isfile(config.reference) or os.path.isdir( config.reference ):
         reference = config.reference
 
     if env != 'development' and (
@@ -101,7 +101,7 @@ def init(config:dict) -> None:
 
 
 
-def dna_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+def dna_subcmd(args:list) -> None:
 
     commands = {'e':'exome', 'es': 'exomes', 'g':'genome', 'gs':'genomes','b':'bwa', 'h': 'help'}
     args_utils.min_count(1, len(args),
@@ -127,7 +127,7 @@ def dna_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> No
         sys.exit(1)
 
 
-def rna_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+def rna_subcmd(args:list) -> None:
 
     commands = {'s':'star', 'sa':'salmon', 'f':'featureCounts', 'h': 'help'}
     args_utils.min_count(1, len(args),
@@ -149,7 +149,7 @@ def rna_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> No
         sys.exit(1)
 
 
-def variants_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+def variants_subcmd(args:list) -> None:
 
     commands = {'s':'single', 'j':'joint', 'h': 'help'}
     args_utils.min_count(1, len(args),
@@ -169,7 +169,7 @@ def variants_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") 
         print("variants joint <output-name> <input-files>")
         sys.exit(1)
 
-def qc_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+def qc_subcmd(args:list) -> None:
 
     commands = {'f':'fastqc', 'e':'exome', 'g':'genome', 'r': 'rnaseq','h': 'help'}
     args_utils.min_count(1, len(args),
@@ -179,7 +179,7 @@ def qc_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> Non
     command = args_utils.valid_command(command, commands)
 
 
-def utils_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+def utils_subcmd(args:list) -> None:
 
     commands = {'u':'to_ubam', 'h': 'help'}
     args_utils.min_count(1, len(args),
@@ -218,15 +218,15 @@ def main():
     command = args_utils.valid_command(command, commands)
 
     if command == 'dna':
-        dna_subcmd(args.command, outdir=args.outdir)
+        dna_subcmd(args.command)
     if command == 'rna':
-        rna_subcmd(args.command, outdir=args.outdir)
+        rna_subcmd(args.command)
     elif command == 'variants':
-        variants_subcmd(args.command, outdir=args.outdir)
+        variants_subcmd(args.command)
     elif command == 'qc':
-        qc_subcmd(args.command, outdir=args.outdir)
+        qc_subcmd(args.command)
     elif command == 'utils':
-        utils_subcmd(args.command, outdir=args.outdir)
+        utils_subcmd(args.command)
     else:
         print("The tool support the following commands: {}\n".format(args_utils.pretty_commands(commands)))
         parser.print_usage()
