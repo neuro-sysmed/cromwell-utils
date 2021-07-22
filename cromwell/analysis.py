@@ -14,7 +14,6 @@ import cromwell.api as cromwell_api
 import cromwell.facade as cromwell_facade
 import cromwell.utils as cromwell_utils
 import cromwell.json_utils as json_utils
-import cromwell.analysis as analysis
 
 
 
@@ -194,15 +193,15 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
     rev_reads = args_utils.get_or_default(args, None)
 
 
-    indata = [f'Salmon.sample_name={name}',
+    indata = {f'Salmon.sample_name={name}',
               f"Salmon.fwd_reads={fwd_reads}",
               f"Salmon.threads=6",
-              f"Salmon.reference={reference}"]
+              f"Salmon.reference={reference}"}
 
     if rev_reads is not None:
         indata.append(f"Salmon.rev_reads={rev_reads}")
 
-    tmp_inputs = write_tmp_json( data )
+    tmp_inputs = write_tmp_json( indata )
     
     tmp_options = None
     if outdir is not None:
