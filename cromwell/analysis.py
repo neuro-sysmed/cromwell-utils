@@ -194,7 +194,7 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
 
 
     indata = {'Salmon.sample_name': name,
-              "Salmon.fwd_reads": fwd_reads",
+              "Salmon.fwd_reads": fwd_reads,
               "Salmon.threads": 6,
               "Salmon.reference": reference}
 
