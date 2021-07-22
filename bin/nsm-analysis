@@ -73,11 +73,10 @@ def init(config:dict) -> None:
         raise RuntimeError(f'reference-file/dir {reference} does not exist')
 
     if config.nsm_analysis_root:
-        global nsm_analysis_root
-        nsm_analysis_root = config.nsm_analysis_root
+        nsm_root = config.nsm_analysis_root
 
-    if env != 'development' and not os.path.isdir( nsm_analysis_root ):
-        raise RuntimeError(f'nsm-analysis root dir {nsm_analysis_root} does not exist')
+    if env != 'development' and not os.path.isdir( nsm_root ):
+        raise RuntimeError(f'nsm-analysis root dir {nsm_root} does not exist')
 
     if config.zipfile:
         nsm_zip = config.zipfile
