@@ -196,7 +196,7 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
     indata = {'Salmon.sample_name': name,
               "Salmon.fwd_reads": fwd_reads,
               "Salmon.threads": 6,
-              "Salmon.reference": reference}
+              "Salmon.reference_dir": reference}
 
     if rev_reads is not None:
         indata["Salmon.rev_reads"] = rev_reads
