@@ -86,7 +86,7 @@ def init(config:dict) -> None:
 
     if config.outdir:
         outdir = config.ourdir
-    elif config.no_export != False:
+    elif config.no_export == False:
         outdir = os.getcwd()
 
     if env == 'development':
