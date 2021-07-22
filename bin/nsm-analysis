@@ -30,257 +30,187 @@ import cromwell.api as cromwell_api
 import cromwell.facade as cromwell_facade
 import cromwell.utils as cromwell_utils
 import cromwell.json_utils as json_utils
+import cromwell.analysis as analysis
 
 
 version = version_utils.as_string('cromwell')
+
 reference = "hg38"
-
-env = "development"
-
+env = "production"
 nsm_root = '/usr/local/lib/nsm-analysis'
-
-wf_files = {'mapping_dna': '/home/brugger/projects/nsm/nsm-analysis/workflows/mapping_dna.wdl'}
-wf_files = {'mapping_dna': f'{nsm_root}/workflows/mapping_dna.wdl',
-            'var_calling': f'{nsm_root}/workflows/variant_calling.wdl',
-            'bam-to-ubam': f'{nsm_root}/utils/bam_to_ubam.wdl',}
-
 nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
+outdir = None
 
 
-def set_reference(ref) -> None:
-    global reference
-    if ref == 'hg38':
-        reference = 'reference_hg38.json'
-    elif ref == 'hg37' or ref == 'hg19':
-        reference = 'reference_hg19.json'
-    elif os.path.isfile(ref):
-        reference = ref
+wf_files = {'exome': f'{nsm_root}/workflows/dna_pipeline.wdl',
+            'star': f'{nsm_root}/workflows/star.wdl',
+            'salmon': f'{nsm_root}/workflows/salmon.wdl',
+            'haplotype': f'{nsm_root}/workflows/haplotype_caller.wdl',
+            'jointgenotyping': f'{nsm_root}/workflows/joint_genotyping.wdl',
+
+            'to-ubam': f'{nsm_root}/utils/to_ubam.wdl',
+            'fastqc': f'{nsm_root}/utils/fastqc.wdl',}
+
+
+
+def init(config:dict) -> None:
+    global reference, nsm_root, nsm_zip, env, outdir
+
+    if config.development:
+        env = 'development'
+
+    reference_dir = f"{config.reference_dir}/"
+
+    if config.reference == 'hg38':
+        reference = f'{reference_dir}reference_hg38.json'
+    elif config.reference == 'hg37' or config.reference == 'hg19':
+        reference = f'{reference_dir}reference_hg19.json'
+    elif os.path.isfile(config.reference):
+        reference = config.reference
+
+    if env != 'development' and (
+        not os.path.isfile( reference ) or not os.path.isdir(reference)):
+        raise RuntimeError(f'reference-file/dir {reference} does not exist')
+
+    if config.nsm_analysis_root:
+        global nsm_analysis_root
+        nsm_analysis_root = config.nsm_analysis_root
+
+    if env != 'development' and not os.path.isdir( nsm_analysis_root ):
+        raise RuntimeError(f'nsm-analysis root dir {nsm_analysis_root} does not exist')
+
+    if config.zipfile:
+        nsm_zip = config.zipfile
+
+    if env != 'development' and  not os.path.isfile( nsm_zip ):
+        raise RuntimeError(f'nsm-zipfile {nsm_zip} does not exist')
+
+    if config.outdir:
+        outdir = config.ourdir
+    elif config.no_export != False:
+        outdir = os.getcwd()
+
+    if env == 'development':
+        print("environment:\n------------")
+        print(f' reference --> {reference}')
+        print(f' nsm_root  --> {nsm_root}')
+        print(f' nsm_zio   --> {nsm_zip}')
+        print(f' outdir    --> {outdir}')
+        print("\n")
 
     return
 
-def group_args(args) -> dict:
-
-    res = {'':[]}
-    for arg in args:
-        m = re.match(r'(\w):(.+)', arg)
-        if m is not None:
-            k, v = m.group(1), m.group(2)
-            if k not in res:
-                res[ k ] = []
-            res[ k ].append(v)
-        else:
-            res[ 'rest' ].append(v)
-            
-    return res
 
 
-def write_tmp_json(data) -> str:
+def dna_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
 
-    tmpfile = tempfile.NamedTemporaryFile(mode="w", delete=False)
-    json.dump(data, tmpfile.file)
-    tmpfile.close()
+    commands = {'e':'exome', 'es': 'exomes', 'g':'genome', 'gs':'genomes','b':'bwa', 'h': 'help'}
+    args_utils.min_count(1, len(args),
+                         msg="nsm-analysis dna takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-    return tmpfile.name
-
-
-def exomes_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
-
-
-    if 'help' in args or 'h' in args:
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+    if command == 'exome' or command == 'genome':
+        analysis.exome_genome(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    elif command == 'exomes' or command == 'genomes':
+        analysis.exomes_genomes(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    elif command == 'bwa':
+        analysis.bwa(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    else:
         print("Help:")
-        print("Exomes/genomes analysis from unaligned bams (ubams)")
+        print("Exomes/genomes/alignment from unaligned bams (ubams)")
         print("==========================")
-        print("exome <input-files> [-r reference] ")
-        print("genome <input-files> [-r reference] [base-recalibration]")
+        print("dna exome <sample-name> <input-files>  ")
+        print("dna genome <sample-name> <input-files> ")
+        print("dna exomes <input-files>  ")
+        print("dna genomes <input-files> ")
+        print("dna bwa <input-files> ")
         sys.exit(1)
 
 
-    args_utils.min_count(1, len(args), msg="One or more ubams required.")
+def rna_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
 
-    for arg in args:
-        sample_name = re.sub('\..*', '', arg)
-#        print( sample_name, arg)
-        exome_subcmd(analysis, [sample_name, arg], outdir=outdir)
+    commands = {'s':'star', 'sa':'salmon', 'f':'featureCounts', 'h': 'help'}
+    args_utils.min_count(1, len(args),
+                         msg="nsm-analysis rna takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-
-def exome_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
-
-
-    if 'help' in args or 'h' in args:
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+    if command == 'star':
+        analysis.star(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    elif command == 'salmon':
+        analysis.salmon(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    else:
         print("Help:")
-        print("Exome/genome analysis from unaligned bams (ubams)")
+        print("RNAseq alignment/count from fastq files")
         print("==========================")
-        print("exome <sample-name> <input-files> [-r reference] ")
-        print("genome <sample-name> <input-files> [-r reference] [base-recalibration]")
+        print("rna star <sample-name> <fwd-reads> [rev-reads]")
+        print("rna salmon <sample-name> <input-files> ")
+        print("rna featureCounts <annotation-file (gtf/gff)> <output-file> <input-files> ")
         sys.exit(1)
 
 
-    name = args_utils.get_or_fail(args, "Sample name is missing")
-    args_utils.min_count(1, len(args), msg="One or more ubams required.")
+def variants_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
 
-    infiles = []
-    for arg in args:
-        if not re.match(r'^.*\.ubam', arg):
-            raise RuntimeError(f"{arg} have a wrong suffix, should be '.ubam'")
-        if not os.path.isfile(arg):
-            raise RuntimeError(f"cannot find {arg}")
-        arg = os.path.abspath(arg)
-        infiles.append(arg)
+    commands = {'s':'single', 'j':'joint', 'h': 'help'}
+    args_utils.min_count(1, len(args),
+                         msg="nsm-analysis variants takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-    indata = [f'sample_and_unmapped_bams.sample_name={name}',
-              "sample_and_unmapped_bams.unmapped_bam_suffix=.ubam",
-              f"sample_and_unmapped_bams.base_filename={name}"]
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+    if command == 'single':
+        analysis.haplotypecaller(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    elif command == 'joint':
+        analysis.joint_vcf_calling(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    else:
+        print("Help:")
+        print("variant calling bam files")
+        print("==========================")
+        print("variants single <sample-name> <input-file> ")
+        print("variants joint <output-name> <input-files>")
+        sys.exit(1)
 
+def qc_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
 
+    commands = {'f':'fastqc', 'e':'exome', 'g':'genome', 'r': 'rnaseq','h': 'help'}
+    args_utils.min_count(1, len(args),
+                         msg="nsm-analysis qc takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-    if analysis == 'genome':
-        indata['WGS'] = True
-
-    if 'base-recalibration' in args:
-        indata['doBSQR'] = True
-        del args[ args.index( 'base-recalibration')]
-
-    data = json_utils.build_json(indata, "DNAPreprocessing")
-
-    data["DNAPreprocessing"]['sample_and_unmapped_bams']['unmapped_bams'] = []
-    for infile in infiles:
-        data["DNAPreprocessing"]['sample_and_unmapped_bams']['unmapped_bams'].append( infile )
-
-
-    print(reference)
-    data = json_utils.add_jsons(data, [reference], "DNAPreprocessing")
-    data = json_utils.pack(data, 2)
-    tmp_inputs = write_tmp_json( data )
-    
-    tmp_options = None
-    if outdir is not None:
-        tmp_options={"final_workflow_outputs_dir": outdir}
-        tmp_options = write_tmp_json(tmp_options)
-
-
-    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
-    print(f"wdl: {wf_files['mapping_dna']}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
-
-    st = cromwell_api.submit_workflow(wdl_file=wf_files['mapping_dna'], inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=nsm_zip)
-    print(f"{st['id']}: {st['status']}")
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
 
 
 def utils_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
-    commands = {'bu':'bam-to-ubam', 'fu':'fq-to-ubam'}
-    
+
+    commands = {'u':'to_ubam', 'h': 'help'}
+    args_utils.min_count(1, len(args),
+                         msg="nsm-analysis utils takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
+
     command = args.pop(0)
-    if command in commands:
-        command = commands[command]
-
-    if 'help' in args or 'h' in args or command != 'bam-to-ubam':
-        print("Help:")
-        print("Pipelined utils")
-        print("==========================")
-        print("bam-to-ubam <bams>")
-        sys.exit(1)
-
-    data = {"BamToUnalignedBam.unmapped_bam_suffix":'.ubam',
-             "BamToUnalignedBam.mapped_bam_suffix":'.bam',
-             "BamToUnalignedBam.outdir":".",
-             "BamToUnalignedBam.bams": []}
-
-    for arg in args:
-        data["BamToUnalignedBam.bams"].append( os.path.abspath( arg ))
- 
-    tmp_inputs = write_tmp_json( data )
-    
-    tmp_options = None
-    if outdir is not None:
-        tmp_options={"final_workflow_outputs_dir": outdir}
-
-
-    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
-    print(f"wdl: {wf_files['bam-to-ubam']}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
-
-    st = cromwell_api.submit_workflow(wdl_file=wf_files['bam-to-ubam'], inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=nsm_zip)
-    print(f"{st['id']}: {st['status']}")
-
-
-
-
-def callvars_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
-
-    if 'help' in args or 'h' in args:
-        print("Help:")
-        print("bam --> gvcf")
-        print("==========================")
-        print("call-variants <sample-name> <input-files> [-r reference] ")
-        print("call-variants <sample-name> <input-files> [-r reference] [base-recalibration]")
-        sys.exit(1)
-
-
-    name    = args_utils.get_or_fail(args, "Sample name is required")
-    bamfile = args_utils.get_or_fail(args, "bam file required.")
-    bamfile = os.path.abspath(bamfile)
-    bam_index = re.sub(r'\.bam\z', '.bai', bamfile)
-
-
-    indata = [f'input_bam={bamfile}',
-              f'input_bam_index={bam_index}',
-              f"base_file_name={name}",
-              f"final_vcf_base_name={name}",
-            ]
-
-
-
-    data = json_utils.build_json(indata, "VariantCalling")
-
-    data["VariantCalling"]["scatter_settings"] = {"haplotype_scatter_count": 10,
-                                                  "break_bands_at_multiples_of": 0 }
-
-    data["VariantCalling"]["snp_recalibration_tranche_values"] = ["100.0", "99.95", "99.9", "99.8", "99.7", "99.6", "99.5", "99.4", "99.3", "99.0", "98.0", "97.0", "90.0"]
-    data["VariantCalling"]["snp_recalibration_annotation_values"]=["AS_QD", "AS_MQRankSum", "AS_ReadPosRankSum", "AS_FS", "AS_MQ", "AS_SOR"]
-    data["VariantCalling"]["indel_recalibration_tranche_values"]=["100.0", "99.95", "99.9", "99.5", "99.0", "97.0", "96.0", "95.0", "94.0", "93.5", "93.0", "92.0", "91.0", "90.0"]
-    data["VariantCalling"]["indel_recalibration_annotation_values"]=["AS_FS", "AS_ReadPosRankSum", "AS_MQRankSum", "AS_QD", "AS_SOR"]
-    data["VariantCalling"]["snp_filter_level"]=99.7
-    data["VariantCalling"]["indel_filter_level"]=95.0
-
-    data = json_utils.add_jsons(data, [reference], "VariantCalling")
-    data = json_utils.pack(data, 2)
-    tmp_inputs = write_tmp_json( data )
-    
-    tmp_options = None
-    if outdir:
-        tmp_options = write_tmp_json({"final_workflow_outputs_dir": outdir})
-
-    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
-    print(f"wdl: {wf_files['mapping_dna']}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
-
-
-
-    st = cromwell_api.submit_workflow(wdl_file=wf_files['var_calling'], inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency="/cluster/lib/nsm-analysis2/nsm-analysis.zip")
-    print(f"{st['id']}: {st['status']}")
-
-
+    command = args_utils.valid_command(command, commands)
 
 
 def main():
 
-    commands = {'e':'exome', 'es':'exomes','v':'call-variants', 'r':'rnaseq', 's':'single-cell', 'g':'genome', 'gs':'genomes','u': 'utils', 'h': 'help'}
+    commands = {'d':'dna', 'r':'rna','v':'variants', 'q':'qc', 'u':'utils', 'h': 'help'}
+
 
     parser = argparse.ArgumentParser(description=f'nsm-analysis: command line tool for nsm-pipelines ({version})')
 
-    parser.add_argument('-c', '--config', help="NGA config file, or set env CROMWELL",
-                        default=args_utils.get_env_var('CROMWELL'))
     parser.add_argument('-r', '--reference', help="reference to use: hg38(default), hg19", default="hg38")
+    parser.add_argument('-o', '--outdir', help="where to export results to, default working directory")
+
+    parser.add_argument('-R', '--reference-dir', help="reference dir", default="/usr/local/refs")
     parser.add_argument('-n', '--nsm-analysis-root', help="location of nsm-analysis", default="/usr/local/lib/nsm-analysis")
-    parser.add_argument('-o', '--outdir', help="where to store results")
+    parser.add_argument('--no-export', help="Dont export results", action="store_true", default=False)
+    parser.add_argument('-z', '--zipfile', help="wdl zipfile with tasks")
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
+    parser.add_argument('-D','--development', help="running environment", action="store_true", default=False)
     parser.add_argument('command', nargs='*', help="{}".format(",".join(commands)))
 
     args = parser.parse_args()
 
-    set_reference( args.reference )
-
-    if args.nsm_analysis_root:
-        global nsm_analysis_root
-        nsm_analysis_root = args.nsm_analysis_root
-
+    init(args)
 
     args_utils.min_count(1, len(args.command),
                          msg="nsm-analysis takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
@@ -288,16 +218,14 @@ def main():
     command = args.command.pop(0)
     command = args_utils.valid_command(command, commands)
 
-    if command == 'exome' or command == 'genome':
-        exome_subcmd(command, args.command, outdir=args.outdir)
-    if command == 'exomes' or command == 'genomes':
-        exomes_subcmd(command, args.command, outdir=args.outdir)
-    elif command == 'call-variants':        
-        callvars_subcmd("exome", args.command)
-    elif command == 'rnaseq':
-        rnaseq_subcmd(args.command)
-    elif command == 'single-cell':
-        singlecell_subcmd(args.command)
+    if command == 'dna':
+        dna_subcmd(args.command, outdir=args.outdir)
+    if command == 'rna':
+        rna_subcmd(args.command, outdir=args.outdir)
+    elif command == 'variants':
+        variants_subcmd(args.command, outdir=args.outdir)
+    elif command == 'qc':
+        qc_subcmd(args.command, outdir=args.outdir)
     elif command == 'utils':
         utils_subcmd(args.command, outdir=args.outdir)
     else:
