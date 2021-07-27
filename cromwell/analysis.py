@@ -117,20 +117,8 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
     print(f"{st['id']}: {st['status']}")
 
 
-def utils_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
-    commands = {'bu':'bam-to-ubam', 'fu':'fq-to-ubam'}
+def to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
     
-    command = args.pop(0)
-    if command in commands:
-        command = commands[command]
-
-    if 'help' in args or 'h' in args or command != 'bam-to-ubam':
-        print("Help:")
-        print("Pipelined utils")
-        print("==========================")
-        print("bam-to-ubam <bams>")
-        sys.exit(1)
-
     data = {"BamToUnalignedBam.unmapped_bam_suffix":'.ubam',
              "BamToUnalignedBam.mapped_bam_suffix":'.bam',
              "BamToUnalignedBam.outdir":".",
@@ -139,18 +127,14 @@ def utils_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> 
     for arg in args:
         data["BamToUnalignedBam.bams"].append( os.path.abspath( arg ))
  
+
     tmp_inputs = write_tmp_json( data )
-    
-    tmp_options = None
-    if outdir is not None:
-        tmp_options={"final_workflow_outputs_dir": outdir}
+    tmp_options = outdir_json( outdir )
+    tmp_labels = labels_json(workflow='salmon', env=env)
 
-
-    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
-    print(f"wdl: {wf_files['bam-to-ubam']}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
-
-    st = cromwell_api.submit_workflow(wdl_file=wf_files['bam-to-ubam'], inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=nsm_zip)
+    st = cromwell_api.submit_workflow(wdl_file=wdl_wf, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels)    
 
 
 

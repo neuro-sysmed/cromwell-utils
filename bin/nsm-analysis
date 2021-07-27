@@ -42,7 +42,7 @@ nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 outdir = None
 
 
-wf_files = {'exome': f'{nsm_root}/workflows/dna_pipeline.wdl',
+wf_files = {'exome': f'{nsm_root}/workflows/dna_processing.wdl',
             'star': f'{nsm_root}/workflows/star.wdl',
             'salmon': f'{nsm_root}/workflows/salmon.wdl',
             'haplotype': f'{nsm_root}/workflows/haplotype_caller.wdl',
@@ -181,12 +181,22 @@ def qc_subcmd(args:list) -> None:
 
 def utils_subcmd(args:list) -> None:
 
-    commands = {'u':'to_ubam', 'h': 'help'}
+    commands = {'u':'to-ubam', 'h': 'help'}
     args_utils.min_count(1, len(args),
                          msg="nsm-analysis utils takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
+
+    if command == 'to-ubam':
+        analysis.to_ubam(args=args, wdl_wf=wf_files['to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    else:
+        print("Help:")
+        print("variant calling bam files")
+        print("==========================")
+        print("variants single <sample-name> <input-file> ")
+        print("variants joint <output-name> <input-files>")
+        sys.exit(1)
 
 
 def main():
