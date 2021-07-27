@@ -93,7 +93,7 @@ def init(config:dict) -> None:
         print("environment:\n------------")
         print(f' reference --> {reference}')
         print(f' nsm_root  --> {nsm_root}')
-        print(f' nsm_zio   --> {nsm_zip}')
+        print(f' nsm_zip   --> {nsm_zip}')
         print(f' outdir    --> {outdir}')
         print("\n")
 
