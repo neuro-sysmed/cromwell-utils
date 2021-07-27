@@ -1,4 +1,6 @@
 import os
+import sys
+import re
 import json
 import tempfile
 import getpass
@@ -81,7 +83,10 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
 
     indata = [f'sample_and_unmapped_bams.sample_name={name}',
               "sample_and_unmapped_bams.unmapped_bam_suffix=.ubam",
-              f"sample_and_unmapped_bams.base_filename={name}"]
+              f"sample_and_unmapped_bams.base_filename={name}",
+              "scatter_settings.haplotype_scatter_count=10",
+              "scatter_settings.break_bands_at_multiples_of=0"
+            ]
 
 
     if analysis == 'genome':
@@ -150,7 +155,7 @@ def utils_subcmd(args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> 
 
 
 
-def callvars_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
+def callvars_subcmd(analysis:str, args:list, outdir:str=None,env:str=None) -> None:
 
     if 'help' in args or 'h' in args:
         print("Help:")
@@ -221,7 +226,7 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
 
     tmp_inputs = write_tmp_json( indata )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env)
+    tmp_labels = labels_json(workflow='salmon', env=env)
 
     if env == 'development':
         print(f"wdl: {wdl_wf}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
