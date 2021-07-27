@@ -26,6 +26,24 @@ def write_tmp_json(data) -> str:
     return tmpfile.name
 
 
+def outdir_json(outdir:str=None) -> str:
+
+    if outdir is None:
+        return None
+
+    return write_tmp_json({"final_workflow_outputs_dir": outdir, "use_relative_output_paths": True})
+
+
+def labels_json(workflow:str, env:str ) -> str:
+    return write_tmp_json({"env": env, "user": getpass.getuser(), "workflow": workflow})
+
+
+def del_files(*files) -> None:
+    for f in files:
+        if f is not None and os.path.isfile( f ):
+            os.remove(f)
+
+
 
 def exomes_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
 
@@ -202,16 +220,12 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
         indata["Salmon.rev_reads"] = os.path.abspath(rev_reads)
 
     tmp_inputs = write_tmp_json( indata )
-    
-    tmp_options = None
-    if outdir is not None:
-        tmp_options={"final_workflow_outputs_dir": outdir, "use_relative_output_paths": True}
-        tmp_options = write_tmp_json(tmp_options)
+    tmp_options = outdir_json( outdir )
+    tmp_labels = labels_json(workflow='salmon', env)
 
-    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
     if env == 'development':
         print(f"wdl: {wdl_wf}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
 
     st = cromwell_api.submit_workflow(wdl_file=wdl_wf, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
-    
+    del_files( tmp_inputs, tmp_options, tmp_labels)    
