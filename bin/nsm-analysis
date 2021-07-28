@@ -125,6 +125,7 @@ def dna_subcmd(args:list) -> None:
         print("dna genomes <input-files> ")
         print("dna bwa <input-files> ")
         sys.exit(1)
+    sys.exit()
 
 
 def rna_subcmd(args:list) -> None:
@@ -147,7 +148,7 @@ def rna_subcmd(args:list) -> None:
         print("rna salmon <sample-name> <input-files> ")
         print("rna featureCounts <annotation-file (gtf/gff)> <output-file> <input-files> ")
         sys.exit(1)
-
+    sys.exit()
 
 def variants_subcmd(args:list) -> None:
 
@@ -168,6 +169,8 @@ def variants_subcmd(args:list) -> None:
         print("variants single <sample-name> <input-file> ")
         print("variants joint <output-name> <input-files>")
         sys.exit(1)
+    sys.exit()
+
 
 def qc_subcmd(args:list) -> None:
 
@@ -178,6 +181,7 @@ def qc_subcmd(args:list) -> None:
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
 
+    sys.exit()
 
 def utils_subcmd(args:list) -> None:
 
@@ -198,6 +202,7 @@ def utils_subcmd(args:list) -> None:
         print("variants joint <output-name> <input-files>")
         sys.exit(1)
 
+    sys.exit()
 
 def main():
 
