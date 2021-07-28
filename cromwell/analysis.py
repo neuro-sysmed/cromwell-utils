@@ -93,28 +93,24 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
         indata['WGS'] = True
         indata['doBSQR'] = True
 
-    data = json_utils.build_json(indata, "DNAPreprocessing")
+    data = json_utils.build_json(indata, "DNAProcessing")
 
-    data["DNAPreprocessing"]['sample_and_unmapped_bams']['unmapped_bams'] = []
+    data["DNAProcessing"]['sample_and_unmapped_bams']['unmapped_bams'] = []
     for infile in infiles:
-        data["DNAPreprocessing"]['sample_and_unmapped_bams']['unmapped_bams'].append( infile )
+        data["DNAProcessing"]['sample_and_unmapped_bams']['unmapped_bams'].append( infile )
 
     
     data = json_utils.add_jsons(data, [reference], "DNAPreprocessing")
     data = json_utils.pack(data, 2)
+
     tmp_inputs = write_tmp_json( data )
-    
-    tmp_options = None
-    if outdir is not None:
-        tmp_options={"final_workflow_outputs_dir": outdir, "use_relative_output_paths": True}
-        tmp_options = write_tmp_json(tmp_options)
+    tmp_options = outdir_json( outdir )
+    tmp_labels = labels_json(workflow='salmon', env=env)
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
-
-    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
-    print(f"wdl: {wdl_wf}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
-
-    st = cromwell_api.submit_workflow(wdl_file=wdl_wf, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_wdl)
 
 
 def to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
@@ -131,10 +127,11 @@ def to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=Non
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
     tmp_labels = labels_json(workflow='salmon', env=env)
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
-    st = cromwell_api.submit_workflow(wdl_file=wdl_wf, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_wdl, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
-    del_files( tmp_inputs, tmp_options, tmp_labels)    
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_wdl)
 
 
 
@@ -179,13 +176,14 @@ def callvars_subcmd(analysis:str, args:list, outdir:str=None,env:str=None) -> No
     data = json_utils.add_jsons(data, [reference], "VariantCalling")
     data = json_utils.pack(data, 2)
     tmp_inputs = write_tmp_json( data )
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
     
     tmp_options = None
     if outdir:
         tmp_options = write_tmp_json({"final_workflow_outputs_dir": outdir})
 
     tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
-    print(f"wdl: {wf_files['mapping_dna']}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
+    print(f"wdl: {tmp_wf_file}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
 
 
 
@@ -199,6 +197,8 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
     fwd_reads = args_utils.get_or_fail(args, "fwd-reads file missing")
     rev_reads = args_utils.get_or_default(args, None)
 
+    tmp_wdl_file = cromwell_utils.patch_workflow_imports_for_running(wdl_wf)
+    print( tmp_wdl_file )
 
     indata = {'Salmon.sample_name': name,
               "Salmon.fwd_reads": os.path.abspath(fwd_reads),
@@ -211,10 +211,11 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
     tmp_inputs = write_tmp_json( indata )
     tmp_options = outdir_json( outdir )
     tmp_labels = labels_json(workflow='salmon', env=env)
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     if env == 'development':
-        print(f"wdl: {wdl_wf}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
+        print(f"wdl: {tmp_wf_file}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
 
-    st = cromwell_api.submit_workflow(wdl_file=wdl_wf, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
-    del_files( tmp_inputs, tmp_options, tmp_labels)    
+    del_files( tmp_wf_file, tmp_inputs, tmp_options, tmp_labels)    
