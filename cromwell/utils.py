@@ -2,6 +2,7 @@
 import re
 import os
 import sys
+import tempfile
 import shutil
 import pytz
 
@@ -75,6 +76,33 @@ def patch_workflow_imports(wdlfile:str, files:dict) -> None:
     with  open(filename, 'w') as fh:
         fh.write( "".join(lines) )
         fh.close()
+
+
+def fix_wdl_workflow_imports(wdlfile:str) -> None:
+
+    wdlfile = "/home/brugger/projects/nsm/nsm-analysis/workflows/salmon.wdl"
+
+#    print(wdlfile)
+
+
+    tmpfile = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    print( tmpfile.name)
+
+    # open and read in the while file as a single string
+    with open( wdlfile, 'r') as fh:
+        for line in fh.readlines():
+            if line.startswith("import"):
+                g = re.match(r'import \".*?(\/.*)\"(.*)', line)
+                if (g):
+                    import_file = g.group(1)
+                    rest = g.group(2)
+                    line = f'import ".{import_file}"{rest}\n'
+            tmpfile.write( line )
+        fh.close()
+
+    tmpfile.close()
+
+    return tmpfile.name
 
 
 def patch_version_location(path:str) -> None:
