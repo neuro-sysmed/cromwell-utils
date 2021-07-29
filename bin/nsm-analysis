@@ -159,7 +159,7 @@ def variants_subcmd(args:list) -> None:
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
     if command == 'single':
-        analysis.haplotypecaller(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.haplotypecaller(args=args, reference=reference, wdl_wf=wf_files['haplotype'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     elif command == 'joint':
         analysis.joint_vcf_calling(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     else:
