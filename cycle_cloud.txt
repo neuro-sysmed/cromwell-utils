@@ -1,0 +1,8 @@
+u: brugger
+p: AUKWAso4P5G2IbZ
+u: sysadmin (sysadmin)
+p: eZ2FylVietGf06R
+u: guppy
+p: E71HBH51RHjUso7
+u: binf
+p: YOm8uMt4JcE8
