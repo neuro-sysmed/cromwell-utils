@@ -171,15 +171,15 @@ def bams_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:st
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     for arg in args:
-        data = {"BamToUnalignedBam.bams": os.path.abspath( arg )}
+        data = {"BamToUnalignedBam.input_bam": os.path.abspath( arg )}
         tmp_inputs = write_tmp_json( data )
         tmp_labels = labels_json(workflow='bams-to-ubams', env=env, sample=arg)
         st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
         print(f"{st['id']}: {st['status']}")
-        del_files( tmp_inputs, tmp_labels)
+#        del_files( tmp_inputs, tmp_labels)
 
 
-    del_files( tmp_options, tmp_wf_file)
+#    del_files( tmp_options, tmp_wf_file)
 
 
 
