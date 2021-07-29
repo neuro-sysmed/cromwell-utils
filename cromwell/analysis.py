@@ -125,7 +125,7 @@ def exomes_genomes(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:s
 
 
 
-def haplotypecaller(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
 
     name = args_utils.get_or_fail(args, "Sample name is missing")
     bamfile = args_utils.get_or_fail(args, "bamfile is missing")
