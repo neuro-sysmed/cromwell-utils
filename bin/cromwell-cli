@@ -54,49 +54,48 @@ def cromwell_info() -> None:
     print(f'Cromwell server (v:{c_version}), status: {c_status}')
 
 
-def workflow_subcmd(commands) -> None:
-    sub_commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
+def workflow_subcmd(args) -> None:
+    commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
                     'o':'outputs', 't': 'timing', 'm':'meta', 'la': 'labels', 'e': 'export', 'h':'help'}
 
-    if len(commands) == 0:
-        commands.append('help')
 
-    sub_command = commands.pop(0)
-    sub_command = args_utils.valid_command(sub_command, sub_commands)
+    args_utils.min_count(1, len(args),
+                         msg="workflow takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-    if sub_command == 'submit':
-        cromwell_facade.submit_workflow(commands, as_json=as_json)
-    elif sub_command == 'batch':
-        cromwell_facade.batch_submit_workflow(commands, as_json=as_json)
-    elif sub_command == 'status':
-        cromwell_facade.workflow_status(commands, as_json=as_json)
-    elif sub_command == 'abort':
-        cromwell_facade.workflow_abort(commands, as_json=as_json)
-    elif sub_command == 'logs':
-        cromwell_facade.workflow_logs(commands, as_json=as_json)
-    elif sub_command == 'outputs':
-        cromwell_facade.workflow_outputs(commands, as_json=as_json)
-    elif sub_command == 'export':
-        cromwell_facade.export_workflow_outputs(commands)
-    elif sub_command == 'timing':
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+
+    if command == 'submit':
+        cromwell_facade.submit_workflow(args, as_json=as_json)
+    elif command == 'batch':
+        cromwell_facade.batch_submit_workflow(args, as_json=as_json)
+    elif command == 'status':
+        cromwell_facade.workflow_status(args, as_json=as_json)
+    elif command == 'abort':
+        cromwell_facade.workflow_abort(args, as_json=as_json)
+    elif command == 'logs':
+        cromwell_facade.workflow_logs(args, as_json=as_json)
+    elif command == 'outputs':
+        cromwell_facade.workflow_outputs(args, as_json=as_json)
+    elif command == 'export':
+        cromwell_facade.export_workflow_outputs(args)
+    elif command == 'timing':
         sys.exit(10)
         print('not done yet, do we need this? outputs a html page')
-        cromwell_facade.workflow_timing(commands, as_json=as_json)
-    elif sub_command == 'meta':
-        cromwell_facade.workflow_meta(commands, as_json=as_json)
-    elif sub_command == 'labels':
-        sub_cmd = args_utils.get_or_fail(commands, "Need either get or set")
+        cromwell_facade.workflow_timing(args, as_json=as_json)
+    elif command == 'meta':
+        cromwell_facade.workflow_meta(args, as_json=as_json)
+    elif command == 'labels':
+        sub_cmd = args_utils.get_or_fail(args, "Need either get or set")
         if sub_cmd == 'get':
-            cromwell_facade.workflow_labels_get(commands, as_json=as_json)
+            cromwell_facade.workflow_labels_get(args, as_json=as_json)
         elif sub_cmd == 'set':
-            wf_id = args_utils.get_or_fail(commands, "workflow id is required")
-            cromwell_facade.workflow_labels_set(wf_id, commands)
+            wf_id = args_utils.get_or_fail(args, "workflow id is required")
+            cromwell_facade.workflow_labels_set(wf_id, args)
         else:
             print("provide either get or set for workflow labels")
 
     else:
-        if sub_command != 'help':
-            print(f"Error: Unknown command '{sub_command}'\n")
 
         print("Help:")
         print("Submit and interact with workflow(s)")
@@ -133,51 +132,54 @@ def print_workflows(data:list, as_json:bool=False, brief:bool=False) -> None:
 
 
 
-def workflows_subcmd(commands) -> None:
-    sub_commands = {'a':'all', 'd': 'days', 's': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'h':'help'}
+def workflows_subcmd(args) -> None:
+    commands = {'a':'all', 'd': 'days', 'h':'hours','s': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'da':'date', 'q':'query', 'h':'help'}
 
     brief = False
-    if 'brief' in commands:
+    if 'brief' in args:
         brief = True
-        del commands[ commands.index( 'brief')]
+        del args[ args.index( 'brief')]
 
-    if 'b' in commands:
+    if 'b' in args:
         brief = True
-        del commands[ commands.index( 'b')]
+        del args[ args.index( 'b')]
 
-    if len(commands) == 0:
-        commands.append('all')
+    if len(args) == 0:
+        args.append('all')
 
-    sub_command = commands.pop(0)
-    sub_command = args_utils.valid_command(sub_command, sub_commands)
+    args_utils.min_count(1, len(args),
+                         msg="workflows takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-    if sub_command == 'all':
-        count = args_utils.get_or_default(commands, 10)
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+
+    if command == 'all':
+        count = args_utils.get_or_default(args, 10)
         data = cromwell_facade.workflows(as_json=as_json, count=count)
-    elif sub_command == 'date':
-        from_date = args_utils.get_or_fail(commands, "from date is required")
-        to_date   = args_utils.get_or_default(commands, None)
+    elif command == 'date':
+        from_date = args_utils.get_or_fail(args, "from date is required")
+        to_date   = args_utils.get_or_default(args, None)
 
         data = cromwell_facade.workflows(from_date=from_date, to_date=to_date, as_json=as_json)
-    elif sub_command == 'days':
-        days   = args_utils.get_or_default(commands, 7)
+    elif command == 'days':
+        days   = args_utils.get_or_default(args, 7)
         from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(days)) )
         data = cromwell_facade.workflows(from_date=from_date, as_json=as_json, query=True)
-    elif sub_command == 'hours':
-        hours   = args_utils.get_or_default(commands, 1)
+    elif command == 'hours':
+        hours   = args_utils.get_or_default(args, 1)
         from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(hours)) )
         data = cromwell_facade.workflows(from_date=from_date, as_json=as_json, query=True)
-    elif sub_command == 'status':
-        data = cromwell_facade.workflows(status=commands, as_json=as_json)
-    elif sub_command == 'name':
-        data = cromwell_facade.workflows(names=commands, as_json=as_json)
-    elif sub_command == 'id':
-        data = cromwell_facade.workflows(ids=commands, as_json=as_json)
-    elif sub_command == 'label':
-        data = cromwell_facade.workflows(labels=commands, as_json=as_json)
+    elif command == 'status':
+        data = cromwell_facade.workflows(status=args, as_json=as_json)
+    elif command == 'name':
+        data = cromwell_facade.workflows(names=args, as_json=as_json)
+    elif command == 'id':
+        data = cromwell_facade.workflows(ids=args, as_json=as_json)
+    elif command == 'label':
+        data = cromwell_facade.workflows(labels=args, as_json=as_json)
 
-    elif sub_command == 'query' or sub_command == 'q':
-        args = group_args(commands)
+    elif command == 'query':
+        args = group_args(args)
 
         data = cromwell_facade.workflows( from_date=args.get("f", None),
                             to_date=args.get("t", None),
@@ -187,9 +189,6 @@ def workflows_subcmd(commands) -> None:
                             labels=args.get("l", None), query=True, as_json=as_json)
     else:
         
-        if sub_command != 'help':
-            print(f"Error: Unknown command '{sub_command}'\n")
-
         print("Help:")
         print("Fetches information/status for workflow(s), can be filtered in various ways")
         print("==========================")
@@ -226,7 +225,7 @@ def cleanup_subcmd(args) -> None:
 
     commands = {'t': 'tmpfiles', 'f': 'files', 'n':'nuke', 'h':'help'}
     args_utils.min_count(1, len(args),
-                         msg="nsm-analysis dna takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
+                         msg="cleanup takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
@@ -241,9 +240,6 @@ def cleanup_subcmd(args) -> None:
 
     else:
         
-        if sub_command != 'help':
-            print(f"Error: Unknown command '{sub_command}'\n")
-
         print("Help:")
         print("Delete files created during workflow analysis")
         print("==========================")
@@ -260,15 +256,15 @@ def cleanup_subcmd(args) -> None:
 
 
 
-def utils_subcmd(commands) -> None:
-    sub_commands = {'s':'set-paths', 'p':'patch-workflows','pv':'patch-versionfile', 'pi': 'ping', 'z':'zip', 'h':'help'}
-    sub_commands = {'p':'patch-versionfile', 'pi': 'ping', 'z':'zip', 'h':'help'}
+def utils_subcmd(args) -> None:
+#    sub_commands = {'s':'set-paths', 'p':'patch-workflows','pv':'patch-versionfile', 'pi': 'ping', 'z':'zip', 'h':'help'}
+    commands = {'p':'patch-versionfile', 'pi': 'ping', 'z':'zip', 'h':'help'}
 
+    args_utils.min_count(1, len(args),
+                         msg="utils takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-    if len(commands) == 0 :
-        commands.append('help')
-    sub_command = commands.pop(0)
-    sub_command = args_utils.valid_command(sub_command, sub_commands)
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
 
 #    if sub_command == 'set-paths':
 #        path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
@@ -294,43 +290,41 @@ def utils_subcmd(commands) -> None:
 
 #        cromwell_utils.patch_version_location(".")
 
-    if sub_command == 'patch-versionfile':
+    if command == 'patch-versionfile':
 
         cromwell_utils.patch_version_location(".")
 
 
-    elif sub_command == 'ping':
+    elif command == 'ping':
         cromwell_info()
 
-    elif sub_command == 'zip':
+    elif command == 'zip':
         cromwell_utils.pack_dir('nsm-analysis.zip')
 
     else:
-        
-        if sub_command != 'help':
-            print(f"Error: Unknown command '{sub_command}'\n")
 
         print("Help:")
         print("utils that don't belong elsewhere")
         print("==========================")
-        print("utils patch-workflows: prepares files before zipping")
+        print("utils patch-versionfile: sets full path to version.json in versions.wdl")
         print("utils zip: compresses files so can be submitted")
 
-        print("utils set-paths [path to wdl dir]")
+#        print("utils set-paths [path to wdl dir]")
         print("utils ping (check server is a alive and what version is running) ")
         sys.exit(1)
 
 
-def monitor_subcmd(commands, interval:int=60) -> None:
-    if len(commands) == 0:
-        commands.append('all')
+def monitor_subcmd(args, interval:int=60) -> None:
 
-    sub_commands = {'a':'all', 'd':'days', 'h':'hours','h':'status', 'n':'name', 'i':'id', 'l':'label', 'h':'help'}
+    commands = {'a':'all', 'd':'days', 'h':'hours','h':'status', 'n':'name', 'i':'id', 'l':'label', 'h':'help'}
 
-    sub_command = commands.pop(0)
-    sub_command = args_utils.valid_command(sub_command, sub_commands)
+    if len(args) == 0:
+        args.append('all')
 
-    if sub_command == 'help':
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+
+    if command == 'help':
 
         print("Help:")
         print("Like workflows, but continually updates the information")
@@ -348,13 +342,13 @@ def monitor_subcmd(commands, interval:int=60) -> None:
     global as_json
     as_json = False
 
-    tmp_commands = commands.copy()
+    tmp_args = args.copy()
 
     while True:
         os.system('clear')
         print(datetime.now())
-        commands = tmp_commands.copy()
-        workflows_subcmd( commands )
+        args = tmp_args.copy()
+        workflows_subcmd( args )
         time.sleep(int(interval))
         continue
 
