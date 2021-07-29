@@ -231,11 +231,12 @@ def cleanup_subcmd(args) -> None:
     command = args_utils.valid_command(command, commands)
 
     if command == 'tmpfiles' or command == 'files' or command == 'nuke':
-        value = args_utils.get_or_fail(args, "cleanup/purge requires either days or hours followed by a number, or an id")
+        value = args_utils.get_or_fail(args, "cleanup requires either days or hours followed by a number, or an id")
+        value = args_utils.valid_command(value, {'d':'days', 'h':'hours'})
         if cromwell_utils.is_id(value):
             cromwell_facade.cleanup(action=command, ids=[value] + args)
         else:
-            time_span = int(args_utils.get_or_default(commands, 2))
+            time_span = int(args_utils.get_or_default(args, 2))
             cromwell_facade.cleanup(action=command, time_type=value, time_span=time_span)
 
     else:
