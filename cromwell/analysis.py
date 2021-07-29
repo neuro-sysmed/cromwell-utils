@@ -108,7 +108,7 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
 
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
-    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_wdl)
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
 
 
 
