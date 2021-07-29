@@ -166,8 +166,6 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
 
 def bams_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
     
-    name = args_utils.get_or_fail(args, "Sample name is missing")
-
     data = {"BamsToUnalignedBams.bams": []}
     tmp_options = outdir_json( outdir )
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
