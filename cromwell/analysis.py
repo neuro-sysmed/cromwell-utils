@@ -188,15 +188,15 @@ def fqs_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str
 
     
 
-    data = {"FqToUnalignedBams.fwd_fq": fq_fwd, 
-            "FqToUnalignedBams.out_name": out_name,
-            "FqToUnalignedBams.sample_name": out_name,
-            "FqToUnalignedBams.library_name": out_name,
-            "FqToUnalignedBams.readgroup": out_name,
+    data = {"FqToUnalignedBam.fwd_fq": fq_fwd, 
+            "FqToUnalignedBam.out_name": out_name,
+            "FqToUnalignedBam.sample_name": out_name,
+            "FqToUnalignedBam.library_name": out_name,
+            "FqToUnalignedBam.readgroup": out_name,
             }
 
     if fq_rev is not None:
-        data["FqToUnalignedBams.fwd_fq"] = fq_rev 
+        data["FqToUnalignedBam.fwd_fq"] = fq_rev 
 
     tmp_options = outdir_json( outdir )
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
