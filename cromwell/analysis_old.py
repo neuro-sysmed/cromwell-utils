@@ -50,3 +50,23 @@ def callvars_subcmd(analysis:str, args:list, outdir:str=None,env:str=None) -> No
     st = cromwell_api.submit_workflow(wdl_file=wf_files['var_calling'], inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency="/cluster/lib/nsm-analysis2/nsm-analysis.zip")
     print(f"{st['id']}: {st['status']}")
 
+
+def exomes_genomes(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+
+
+    if 'help' in args or 'h' in args:
+        print("Help:")
+        print("Exomes/genomes analysis from unaligned bams (ubams)")
+        print("==========================")
+        print("exome <input-files> [-r reference] ")
+        print("genome <input-files> [-r reference] [base-recalibration]")
+        sys.exit(1)
+
+
+    args_utils.min_count(1, len(args), msg="One or more ubams required.")
+
+    for arg in args:
+        sample_name = re.sub('\..*', '', arg)
+#        print( sample_name, arg)
+        exome_genome(analysis, [sample_name, arg], reference, wdl_wf, wdl_zip, outdir, env,)
+
