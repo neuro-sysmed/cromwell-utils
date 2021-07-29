@@ -164,9 +164,8 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
 
 
 
-def bams_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
+def bams_to_ubams(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
     
-    data = {"BamsToUnalignedBams.bams": []}
     tmp_options = outdir_json( outdir )
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
@@ -175,12 +174,37 @@ def bams_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:st
         tmp_inputs = write_tmp_json( data )
         tmp_labels = labels_json(workflow='bams-to-ubams', env=env, sample=arg)
         st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
-        print(f"{st['id']}: {st['status']}")
-#        del_files( tmp_inputs, tmp_labels)
+        del_files( tmp_inputs, tmp_labels)
 
 
-#    del_files( tmp_options, tmp_wf_file)
+    del_files( tmp_options, tmp_wf_file)
 
+
+def fqs_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
+    
+    out_name = args_utils.get_or_fail(args, "Missing out name")
+    fq_fwd = args_utils.get_or_fail(args, "Missing fwd FQ file")
+    fq_rev = args_utils.get_or_default( args, None)
+
+    
+
+    data = {"FqToUnalignedBams.fwd_fq": fq_fwd, 
+            "FqToUnalignedBams.out_name": out_name,
+            "FqToUnalignedBams.sample_name": out_name,
+            "FqToUnalignedBams.library_name": out_name,
+            "FqToUnalignedBams.readgroup": out_name,
+            }
+
+    if fq_rev is not None:
+        data["FqToUnalignedBams.fwd_fq"] = fq_rev 
+
+    tmp_options = outdir_json( outdir )
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
+    tmp_inputs = write_tmp_json( data )
+    tmp_labels = labels_json(workflow='fqs-to-ubam', env=env, sample=out_name)
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
 
 
 

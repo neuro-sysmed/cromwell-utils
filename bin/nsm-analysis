@@ -196,11 +196,11 @@ def utils_subcmd(args:list) -> None:
     command = args_utils.valid_command(command, commands)
 
     if command == 'fqs-to-ubam':
-        analysis.fq_to_ubam(args=args, wdl_wf=wf_files['fqs-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.fqs_to_ubam(args=args, wdl_wf=wf_files['fqs-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
 #    elif command == 'bams-to-ubam':
 #        analysis.bams_to_ubam(args=args, wdl_wf=wf_files['to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     elif command == 'bams-to-ubams':
-        analysis.bams_to_ubam(args=args, wdl_wf=wf_files['bam-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.bams_to_ubams(args=args, wdl_wf=wf_files['bam-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     else:
         print("Help:")
         print("Upstream analysis utils")
