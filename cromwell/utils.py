@@ -80,7 +80,7 @@ def patch_workflow_imports(wdlfile:str, files:dict) -> None:
 
 def fix_wdl_workflow_imports(wdlfile:str) -> None:
 
-    wdlfile = "/home/brugger/projects/nsm/nsm-analysis/workflows/salmon.wdl"
+#    wdlfile = "/home/brugger/projects/nsm/nsm-analysis/workflows/salmon.wdl"
 
     tmpfile = tempfile.NamedTemporaryFile(mode="w", delete=False)
     print( tmpfile.name)
