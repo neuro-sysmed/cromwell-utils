@@ -221,22 +221,23 @@ def workflows_subcmd(commands) -> None:
 
 
 
-def cleanup_subcmd(commands) -> None:
-    sub_commands = {'t': 'tmpfiles', 'f': 'files', 'n':'nuke', 'h':'help'}
+def cleanup_subcmd(args) -> None:
 
-    if len(commands) == 0 :
-        commands.append('help')
 
-    sub_command = commands.pop(0)
-    sub_command = args_utils.valid_command(sub_command, sub_commands)
+    commands = {'t': 'tmpfiles', 'f': 'files', 'n':'nuke', 'h':'help'}
+    args_utils.min_count(1, len(args),
+                         msg="nsm-analysis dna takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
-    if sub_command == 'tmpfiles' or sub_command == 'files' or sub_command == 'nuke':
-        value = args_utils.get_or_fail(commands, "cleanup/purge requires either days or hours followed by a number, or an id")
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+
+    if command == 'tmpfiles' or command == 'files' or command == 'nuke':
+        value = args_utils.get_or_fail(args, "cleanup/purge requires either days or hours followed by a number, or an id")
         if cromwell_utils.is_id(value):
-            cromwell_facade.cleanup(action=sub_command, ids=[value] + commands)
+            cromwell_facade.cleanup(action=command, ids=[value] + args)
         else:
             time_span = int(args_utils.get_or_default(commands, 2))
-            cromwell_facade.cleanup(action=sub_command, time_type=value, time_span=time_span)
+            cromwell_facade.cleanup(action=command, time_type=value, time_span=time_span)
 
     else:
         
