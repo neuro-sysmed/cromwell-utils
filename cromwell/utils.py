@@ -82,9 +82,6 @@ def fix_wdl_workflow_imports(wdlfile:str) -> None:
 
     wdlfile = "/home/brugger/projects/nsm/nsm-analysis/workflows/salmon.wdl"
 
-#    print(wdlfile)
-
-
     tmpfile = tempfile.NamedTemporaryFile(mode="w", delete=False)
     print( tmpfile.name)
 
@@ -105,7 +102,7 @@ def fix_wdl_workflow_imports(wdlfile:str) -> None:
     return tmpfile.name
 
 
-def patch_version_location(path:str) -> None:
+def patch_version_location(path:str=".") -> None:
     wdlfile = file_utils.find_first("Versions.wdl", path)
     versionfile = file_utils.find_first("version.json", path)
 
