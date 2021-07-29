@@ -339,8 +339,9 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
         print(f"Deleted everything in {rootdir}")
         return
 
-    for output in meta['outputs']:
-        outputs[ output ] = meta['outputs'][output]
+    if 'outputs' in meta:
+        for output in meta['outputs']:
+            outputs[ output ] = meta['outputs'][output]
 
     wf_keep_files = ["rc","stdout.submit", "stderr.submit", "script",
                      "stdout", "stderr", "script.submit" ]
