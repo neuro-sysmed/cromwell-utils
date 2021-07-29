@@ -164,27 +164,24 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
 
 
 
-def to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
+def bams_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
     
     name = args_utils.get_or_fail(args, "Sample name is missing")
 
-    data = {"BamToUnalignedBam.unmapped_bam_suffix":'.ubam',
-             "BamToUnalignedBam.mapped_bam_suffix":'.bam',
-             "BamToUnalignedBam.outdir":".",
-             "BamToUnalignedBam.bams": []}
-
-    for arg in args:
-        data["BamToUnalignedBam.bams"].append( os.path.abspath( arg ))
- 
-
-    tmp_inputs = write_tmp_json( data )
+    data = {"BamsToUnalignedBams.bams": []}
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env=env, sample=name)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
-    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
-    print(f"{st['id']}: {st['status']}")
-    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+    for arg in args:
+        data = {"BamToUnalignedBam.bams": os.path.abspath( arg )}
+        tmp_inputs = write_tmp_json( data )
+        tmp_labels = labels_json(workflow='bams-to-ubams', env=env, sample=arg)
+        st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+        print(f"{st['id']}: {st['status']}")
+        del_files( tmp_inputs, tmp_labels)
+
+
+    del_files( tmp_options, tmp_wf_file)
 
 
 

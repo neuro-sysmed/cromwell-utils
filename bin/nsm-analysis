@@ -38,6 +38,8 @@ version = version_utils.as_string('cromwell')
 reference = "hg38"
 env = "production"
 nsm_root = '/usr/local/lib/tmp/nsm-analysis'
+nsm_root = '/home/brugger/projects/nsm/nsm-analysis'
+
 nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 outdir = None
 
@@ -48,7 +50,8 @@ wf_files = {'exome': f'{nsm_root}/workflows/dna_pipeline.wdl',
             'haplotype': f'{nsm_root}/workflows/haplotype_caller.wdl',
             'jointgenotyping': f'{nsm_root}/workflows/joint_genotyping.wdl',
 
-            'to-ubam': f'{nsm_root}/utils/to_ubam.wdl',
+            'bams-to-ubams': f'{nsm_root}/utils/bam_to_ubam.wdl',
+            'fqs-to-ubam': f'{nsm_root}/utils/fqs_to_ubam.wdl',
             'fastqc': f'{nsm_root}/utils/fastqc.wdl',}
 
 
@@ -185,21 +188,26 @@ def qc_subcmd(args:list) -> None:
 
 def utils_subcmd(args:list) -> None:
 
-    commands = {'u':'to-ubam', 'h': 'help'}
+    commands = {'f':'fqs-to-ubam', 'b':'bams-to-ubams','h': 'help'} # 'bs':'bams-to-ubam',
     args_utils.min_count(1, len(args),
                          msg="nsm-analysis utils takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
 
-    if command == 'to-ubam':
-        analysis.to_ubam(args=args, wdl_wf=wf_files['to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    if command == 'fqs-to-ubam':
+        analysis.fq_to_ubam(args=args, wdl_wf=wf_files['fqs-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+#    elif command == 'bams-to-ubam':
+#        analysis.bams_to_ubam(args=args, wdl_wf=wf_files['to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    elif command == 'bams-to-ubams':
+        analysis.bams_to_ubam(args=args, wdl_wf=wf_files['bams-to-ubams'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     else:
         print("Help:")
-        print("variant calling bam files")
+        print("Upstream analysis utils")
         print("==========================")
-        print("variants single <sample-name> <input-file> ")
-        print("variants joint <output-name> <input-files>")
+        print("fqs-to-ubam <sample-name> <input-files> ")
+        print("bams-to-ubam <sample-name> <input-files> (merge all bam files to one file)")
+        print("bams-to-ubams <input-files>  ")
         sys.exit(1)
 
     sys.exit()
