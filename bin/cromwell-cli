@@ -260,7 +260,8 @@ def cleanup_subcmd(commands) -> None:
 
 
 def utils_subcmd(commands) -> None:
-    sub_commands = {'s':'set-paths', 'p':'patch-workflows','pi': 'ping', 'z':'zip', 'h':'help'}
+    sub_commands = {'s':'set-paths', 'p':'patch-workflows','pv':'patch-versionfile', 'pi': 'ping', 'z':'zip', 'h':'help'}
+    sub_commands = {'p':'patch-versionfile', 'pi': 'ping', 'z':'zip', 'h':'help'}
 
 
     if len(commands) == 0 :
@@ -268,27 +269,31 @@ def utils_subcmd(commands) -> None:
     sub_command = commands.pop(0)
     sub_command = args_utils.valid_command(sub_command, sub_commands)
 
-    if sub_command == 'set-paths':
-        path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
+#    if sub_command == 'set-paths':
+#        path = args_utils.get_or_fail(commands, "path to wdl-dir missing")
 
-        files = cromwell_utils.find_files(path, "*.wdl")
-        print( files )
-        for filename in files:
-            cromwell_utils.patch_imports(filename, files)
+#        files = cromwell_utils.find_files(path, "*.wdl")
+#        print( files )
+#        for filename in files:
+#            cromwell_utils.patch_imports(filename, files)
 
-        cromwell_utils.patch_version_location(path)
+#        cromwell_utils.patch_version_location(path)
 
-    elif sub_command == 'patch-workflows':
+#    elif sub_command == 'patch-workflows':
 
-        files = cromwell_utils.find_files("workflows", "*.wdl") 
-        print( files )
-        for filename in files:
-            cromwell_utils.patch_workflow_imports(filename, files)
+#        files = cromwell_utils.find_files("workflows", "*.wdl") 
+#        print( files )
+#        for filename in files:
+#            cromwell_utils.patch_workflow_imports(filename, files)
 
-        files = cromwell_utils.find_files("utils", "*.wdl") 
-        print( files )
-        for filename in files:
-            cromwell_utils.patch_workflow_imports(filename, files)
+#        files = cromwell_utils.find_files("utils", "*.wdl") 
+#        print( files )
+#        for filename in files:
+#            cromwell_utils.patch_workflow_imports(filename, files)
+
+#        cromwell_utils.patch_version_location(".")
+
+    if sub_command == 'patch-versionfile':
 
         cromwell_utils.patch_version_location(".")
 
