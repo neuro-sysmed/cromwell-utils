@@ -358,7 +358,7 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
         for shard in meta['calls'][call]:
             shard_status = shard.get('executionStatus', None)
             shard_start  = shard.get('start', None)
-            shard_end  = datetime_utils.to_string( shard.get('end', None) )
+            shard_end  = datetime_utils.to_datetime( shard.get('end', None) )
             shard_rootdir = shard.get('callRoot', None)
             shard_outputs = shard.get('outputs', {})
 
