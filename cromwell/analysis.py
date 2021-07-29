@@ -98,7 +98,7 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
         data["DNAProcessing"]['sample_and_unmapped_bams']['unmapped_bams'].append( infile )
 
     
-    data = json_utils.add_jsons(data, [reference], "DNAPreprocessing")
+    data = json_utils.add_jsons(data, [reference], "DNAProcessing")
     data = json_utils.pack(data, 2)
 
     tmp_inputs = write_tmp_json( data )
