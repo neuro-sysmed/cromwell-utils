@@ -68,11 +68,12 @@ def init(config:dict) -> None:
         reference = f'{reference_dir}reference_hg38.json'
     elif config.reference == 'hg37' or config.reference == 'hg19':
         reference = f'{reference_dir}reference_hg19.json'
+    elif "gencode" in config.reference: #for salmon!
+        reference = f'{reference_dir}/{config.reference}'
     elif os.path.isfile(config.reference) or os.path.isdir( config.reference ):
         reference = config.reference
 
-    if env != 'development' and (
-        not os.path.isfile( reference ) or not os.path.isdir(reference)):
+    if env != 'development' and (not os.path.isfile( reference ) and not os.path.isdir(reference)):
         raise RuntimeError(f'reference-file/dir {reference} does not exist')
 
     if config.nsm_analysis_root:
