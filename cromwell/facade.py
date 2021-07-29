@@ -402,9 +402,9 @@ def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None, )
         elif time_type == 'hours':
             from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
 
-        workflows = cromwell_api.workflows(from_date=from_date, as_json=True, query=True)
+        workflows_data = workflows(from_date=from_date, as_json=True, query=True)
         ids = []
-        for workflow in workflows:
+        for workflow in workflows_data:
             ids.append(workflow['id'])
 
 
