@@ -18,6 +18,23 @@ import cromwell.utils as cromwell_utils
 import cromwell.json_utils as json_utils
 
 
+def find_bam_index(bamfile:str) -> str:
+
+    if not os.path.isfile(bamfile):
+        raise RuntimeError(f"Bamfile {bamfile} not found!")
+
+    index_file = bamfile.replace(".bam", ".bai")
+
+
+    if os.path.isfile(bamfile+".bai"):
+        return bamfile+".bai"
+    elif os.path.isfile(index_file):
+        return index_file
+    else:
+        raise RuntimeError(f"Index file for amfile {bamfile} not found! [{index_file},{bamfile+'.bai'}")
+
+
+
 
 def write_tmp_json(data) -> str:
 
@@ -36,7 +53,7 @@ def outdir_json(outdir:str=None) -> str:
     return write_tmp_json({"final_workflow_outputs_dir": outdir, "use_relative_output_paths": True})
 
 
-def labels_json(workflow:str, env:str ) -> str:
+def labels_json(workflow:str, env:str, sample:str ) -> str:
     return write_tmp_json({"env": env, "user": getpass.getuser(), "workflow": workflow})
 
 
@@ -46,25 +63,6 @@ def del_files(*files) -> None:
             os.remove(f)
 
 
-
-def exomes_subcmd(analysis:str, args:list, outdir:str=None,unmapped_bam_suffix:str=".ubam") -> None:
-
-
-    if 'help' in args or 'h' in args:
-        print("Help:")
-        print("Exomes/genomes analysis from unaligned bams (ubams)")
-        print("==========================")
-        print("exome <input-files> [-r reference] ")
-        print("genome <input-files> [-r reference] [base-recalibration]")
-        sys.exit(1)
-
-
-    args_utils.min_count(1, len(args), msg="One or more ubams required.")
-
-    for arg in args:
-        sample_name = re.sub('\..*', '', arg)
-#        print( sample_name, arg)
-        exome_subcmd(analysis, [sample_name, arg], outdir=outdir)
 
 
 def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
@@ -105,7 +103,7 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
 
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env=env)
+    tmp_labels = labels_json(workflow='salmon', env=env,sample=name)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
@@ -113,8 +111,63 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
     del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_wdl)
 
 
+
+def exomes_genomes(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+
+    args_utils.min_count(1, len(args), msg="One or more ubams required.")
+
+    for arg in args:
+        sample_name = re.sub('\..*', '', arg)
+        sample_name = re.sub('.*\/', '', sample_name)
+        print( sample_name, arg)
+        exome_genome(analysis, [sample_name, arg], reference, wdl_wf, wdl_zip, outdir, env,)
+
+
+
+
+def haplotypecaller(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+
+    name = args_utils.get_or_fail(args, "Sample name is missing")
+    bamfile = args_utils.get_or_fail(args, "bamfile is missing")
+    bam_index = find_bam_index( bamfile )
+
+    infiles = []
+    for arg in args:
+        if not re.match(r'^.*\.ubam', arg):
+            raise RuntimeError(f"{arg} have a wrong suffix, should be '.ubam'")
+        if not os.path.isfile(arg):
+            raise RuntimeError(f"cannot find {arg}")
+        arg = os.path.abspath(arg)
+        infiles.append(arg)
+
+    indata = [f'input_bam={bamfile}',
+              f'input_bam_index={bam_index}',
+              f'sample_name={name}',
+              "scatter_settings.haplotype_scatter_count=10",
+              "scatter_settings.break_bands_at_multiples_of=0"
+            ]
+
+
+    data = json_utils.build_json(indata, "VariantCalling")
+    data = json_utils.add_jsons(data, [reference], "VariantCalling")
+    data = json_utils.pack(data, 2)
+
+    tmp_inputs = write_tmp_json( data )
+    tmp_options = outdir_json( outdir )
+    tmp_labels = labels_json(workflow='variantcalling', env=env, sample=name)
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
+
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_wdl)
+
+
+
+
 def to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
     
+    name = args_utils.get_or_fail(args, "Sample name is missing")
+
     data = {"BamToUnalignedBam.unmapped_bam_suffix":'.ubam',
              "BamToUnalignedBam.mapped_bam_suffix":'.bam',
              "BamToUnalignedBam.outdir":".",
@@ -126,69 +179,15 @@ def to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=Non
 
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env=env)
+    tmp_labels = labels_json(workflow='salmon', env=env, sample=name)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
-    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_wdl, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
-    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_wdl)
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
 
 
 
-
-def callvars_subcmd(analysis:str, args:list, outdir:str=None,env:str=None) -> None:
-
-    if 'help' in args or 'h' in args:
-        print("Help:")
-        print("bam --> gvcf")
-        print("==========================")
-        print("call-variants <sample-name> <input-files> [-r reference] ")
-        print("call-variants <sample-name> <input-files> [-r reference] [base-recalibration]")
-        sys.exit(1)
-
-
-    name    = args_utils.get_or_fail(args, "Sample name is required")
-    bamfile = args_utils.get_or_fail(args, "bam file required.")
-    bamfile = os.path.abspath(bamfile)
-    bam_index = re.sub(r'\.bam\z', '.bai', bamfile)
-
-
-    indata = [f'input_bam={bamfile}',
-              f'input_bam_index={bam_index}',
-              f"base_file_name={name}",
-              f"final_vcf_base_name={name}",
-            ]
-
-
-
-    data = json_utils.build_json(indata, "VariantCalling")
-
-    data["VariantCalling"]["scatter_settings"] = {"haplotype_scatter_count": 10,
-                                                  "break_bands_at_multiples_of": 0 }
-
-    data["VariantCalling"]["snp_recalibration_tranche_values"] = ["100.0", "99.95", "99.9", "99.8", "99.7", "99.6", "99.5", "99.4", "99.3", "99.0", "98.0", "97.0", "90.0"]
-    data["VariantCalling"]["snp_recalibration_annotation_values"]=["AS_QD", "AS_MQRankSum", "AS_ReadPosRankSum", "AS_FS", "AS_MQ", "AS_SOR"]
-    data["VariantCalling"]["indel_recalibration_tranche_values"]=["100.0", "99.95", "99.9", "99.5", "99.0", "97.0", "96.0", "95.0", "94.0", "93.5", "93.0", "92.0", "91.0", "90.0"]
-    data["VariantCalling"]["indel_recalibration_annotation_values"]=["AS_FS", "AS_ReadPosRankSum", "AS_MQRankSum", "AS_QD", "AS_SOR"]
-    data["VariantCalling"]["snp_filter_level"]=99.7
-    data["VariantCalling"]["indel_filter_level"]=95.0
-
-    data = json_utils.add_jsons(data, [reference], "VariantCalling")
-    data = json_utils.pack(data, 2)
-    tmp_inputs = write_tmp_json( data )
-    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
-    
-    tmp_options = None
-    if outdir:
-        tmp_options = write_tmp_json({"final_workflow_outputs_dir": outdir})
-
-    tmp_labels = write_tmp_json({"env": env, "user": getpass.getuser()})
-    print(f"wdl: {tmp_wf_file}, inputs:{tmp_inputs}, options:{tmp_options}, labels:{tmp_labels}")
-
-
-
-    st = cromwell_api.submit_workflow(wdl_file=wf_files['var_calling'], inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency="/cluster/lib/nsm-analysis2/nsm-analysis.zip")
-    print(f"{st['id']}: {st['status']}")
 
 
 def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
@@ -210,7 +209,7 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
 
     tmp_inputs = write_tmp_json( indata )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env=env)
+    tmp_labels = labels_json(workflow='salmon', env=env, sample=name)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     if env == 'development':

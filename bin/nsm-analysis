@@ -37,12 +37,12 @@ version = version_utils.as_string('cromwell')
 
 reference = "hg38"
 env = "production"
-nsm_root = '/usr/local/lib/nsm-analysis'
+nsm_root = '/usr/local/lib/tmp/nsm-analysis'
 nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 outdir = None
 
 
-wf_files = {'exome': f'{nsm_root}/workflows/dna_processing.wdl',
+wf_files = {'exome': f'{nsm_root}/workflows/dna_pipeline.wdl',
             'star': f'{nsm_root}/workflows/star.wdl',
             'salmon': f'{nsm_root}/workflows/salmon.wdl',
             'haplotype': f'{nsm_root}/workflows/haplotype_caller.wdl',
@@ -113,17 +113,17 @@ def dna_subcmd(args:list) -> None:
         analysis.exome_genome(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     elif command == 'exomes' or command == 'genomes':
         analysis.exomes_genomes(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
-    elif command == 'bwa':
-        analysis.bwa(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+#    elif command == 'bwa':
+#        analysis.bwa(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     else:
         print("Help:")
         print("Exomes/genomes/alignment from unaligned bams (ubams)")
         print("==========================")
         print("dna exome <sample-name> <input-files>  ")
-        print("dna genome <sample-name> <input-files> ")
+#        print("dna genome <sample-name> <input-files> ")
         print("dna exomes <input-files>  ")
-        print("dna genomes <input-files> ")
-        print("dna bwa <input-files> ")
+#        print("dna genomes <input-files> ")
+#        print("dna bwa <input-files> ")
         sys.exit(1)
     sys.exit()
 
