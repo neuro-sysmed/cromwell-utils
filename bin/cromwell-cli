@@ -356,15 +356,15 @@ def monitor_subcmd(args, interval:int=60) -> None:
 def main():
 
     commands = {'wf': 'workflow', 'wfs': 'workflows', 'm': 'monitor', 'c': 'cleanup', 'u':'utils', 'h':'help'}
-    parser = argparse.ArgumentParser(description=f'nga_cli: command line tool for the NGA ({version})')
+    parser = argparse.ArgumentParser(description=f'cromwell-cli: command line tool for the interacting with cromwell server ({version})')
 
-    parser.add_argument('-c', '--config', help="NGA config file, or set env CROMWELL",
+    parser.add_argument('-c', '--config', help="config file, or set env CROMWELL",
                         default=args_utils.get_env_var('CROMWELL'))
     parser.add_argument('-j', '--json-output', help="print the outputs in json format",
                         action="store_true", default=False)
     parser.add_argument('-i', '--interval', help="update interval when monitoring", default=60)
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
-    parser.add_argument('command', nargs='*', help="{}".format(args_utils.pretty_commands(commands)))
+    parser.add_argument('command', nargs='*', help="{}".format(args_utils.pretty_commands(commands)))   
 
     args = parser.parse_args()
 
