@@ -131,7 +131,7 @@ def workflow_abort(wf_id) -> list:
 
 def workflow_labels_get(wf_id) -> list:
     try:
-        r, _ = requests_utils.get(f"{protocol}://{base_url}/api/workflows/v1/{wf_id}/labels")
+        r, _ = requests_utils.get(f"{protocol}://{base_url}/api/workflows/v1/{wf_id}/labels", data={})
         return r
     except HTTPError as e:
         return handle_exception(wf_id, e.response.status_code)
