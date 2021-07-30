@@ -364,7 +364,7 @@ def main():
                         action="store_true", default=False)
     parser.add_argument('-i', '--interval', help="update interval when monitoring", default=60)
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
-    parser.add_argument('command', nargs='*', help="{}".format(",".join(commands)))
+    parser.add_argument('command', nargs='*', help="{}".format(args_utils.pretty_commands(commands)))
 
     args = parser.parse_args()
 
@@ -373,7 +373,7 @@ def main():
         as_json = True
 
     args_utils.min_count(1, len(args.command),
-                         msg="nga-cli takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
+                         msg="cromwell-cli takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
     command = args.command.pop(0)
     command = args_utils.valid_command(command, commands)
@@ -391,7 +391,7 @@ def main():
     else:
         print("The tool support the following commands: {}\n".format(args_utils.pretty_commands(commands)))
         parser.print_usage()
-        parser.add_argument('command', nargs='+', help="{}".format(",".join(commands)))
+#        parser.add_argument('command', nargs='+', help="{}".format(",".join(commands)))
         sys.exit(1)
 
 if __name__ == "__main__":
