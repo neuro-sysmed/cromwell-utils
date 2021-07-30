@@ -30,7 +30,7 @@ import cromwell.facade as cromwell_facade
 import cromwell.utils as cromwell_utils
 
 
-version = version_utils.as_string('cromwell')
+version = version_utils.as_string('cromwell-utils')
 as_json = False
 
 def group_args(args) -> dict:
