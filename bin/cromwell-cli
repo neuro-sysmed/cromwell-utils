@@ -133,7 +133,7 @@ def print_workflows(data:list, as_json:bool=False, brief:bool=False) -> None:
 
 
 def workflows_subcmd(args) -> None:
-    commands = {'a':'all', 'd': 'days', 'h':'hours','s': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'da':'date', 'q':'query', 'h':'help'}
+    commands = {'a':'all', 'l':'last', 'd': 'days', 'h':'hours','s': 'status', 'n': 'name', 'i':'id', 'la': 'label', 'da':'date', 'q':'query', 'h':'help'}
 
     brief = False
     if 'brief' in args:
@@ -145,7 +145,7 @@ def workflows_subcmd(args) -> None:
         del args[ args.index( 'b')]
 
     if len(args) == 0:
-        args.append('all')
+        args.append('l')
 
     args_utils.min_count(1, len(args),
                          msg="workflows takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
@@ -154,7 +154,9 @@ def workflows_subcmd(args) -> None:
     command = args_utils.valid_command(command, commands)
 
     if command == 'all':
-        count = args_utils.get_or_default(args, 10)
+        data = cromwell_facade.workflows(as_json=as_json)
+    elif command == 'last':
+        count = int(args_utils.get_or_default(args, 10))
         data = cromwell_facade.workflows(as_json=as_json, count=count)
     elif command == 'date':
         from_date = args_utils.get_or_fail(args, "from date is required")
@@ -192,8 +194,8 @@ def workflows_subcmd(args) -> None:
         print("Help:")
         print("Fetches information/status for workflow(s), can be filtered in various ways")
         print("==========================")
-        print("workflows [count, default=10, -1 == all])")
-
+        print("workflows [all])")
+        print("monitor last <count, default 10>")
         print("workflows days [nr of days, default=7]")
         print("workflows hours [hours from now]")
         print("workflows status [status1, status2, ...]  ")
@@ -210,12 +212,22 @@ def workflows_subcmd(args) -> None:
         print_workflows(data, as_json, brief)
 
     else:
-        res = [["id", "name", "status", "submitted", "started", "ended"]]
+        res = [["id", "name", "status", "submitted", "started", "ended", "runtime"]]
         for r in data:
             if 'parentWorkflowId' in r:
                 continue
+            
+            runtime = 'NA'
+            if 'start' in r:
+                end_time = datetime_utils.now(pytz.timezone('UTC'))
+                if 'end' in r:
+                    end_time = datetime_utils.to_datetime(r['end'])
 
-            res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA')])
+                start_time = datetime_utils.to_datetime(r['start'])
+                runtime = str(end_time - start_time)
+
+            res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA'), runtime])
+        res = sorted( res, key=lambda x:x[4], reverse=True)
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
 
@@ -317,11 +329,12 @@ def utils_subcmd(args) -> None:
 
 def monitor_subcmd(args, interval:int=60) -> None:
 
-    commands = {'a':'all', 'd':'days', 'h':'hours','h':'status', 'n':'name', 'i':'id', 'l':'label', 'h':'help'}
+    commands = {'a':'all', 'l':'last', 'd':'days', 'h':'hours','h':'status', 'n':'name', 'i':'id', 'la':'label', 'h':'help'}
 
     if len(args) == 0:
         args.append('all')
 
+    tmp_args = args.copy()
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
 
@@ -331,6 +344,7 @@ def monitor_subcmd(args, interval:int=60) -> None:
         print("Like workflows, but continually updates the information")
         print("==========================")
         print("monitor (all, default)")
+        print("monitor last <count, default 10>")
         print("monitor days [days from now]")
         print("monitor hours [hours from now]")
         print("monitor status [status1, status2, ...]  ")
@@ -343,7 +357,6 @@ def monitor_subcmd(args, interval:int=60) -> None:
     global as_json
     as_json = False
 
-    tmp_args = args.copy()
 
     while True:
         os.system('clear')
