@@ -54,7 +54,7 @@ def outdir_json(outdir:str=None) -> str:
 
 
 def labels_json(workflow:str, env:str, sample:str ) -> str:
-    return write_tmp_json({"env": env, "user": getpass.getuser(), "workflow": workflow})
+    return write_tmp_json({"env": env, "user": getpass.getuser(), "workflow": workflow, 'sample':sample})
 
 
 def del_files(*files) -> None:
