@@ -293,16 +293,11 @@ def workflows(from_date:str=None, to_date:str=None, status:list=None, names:list
 
     if 'results' in st:
         for r in st['results']:
-            jsons.append( r )
 
             if 'parentWorkflowId' in r:
                 continue
 
-            res.append([ r['id'], r.get('name','NA'), r['status'], r.get('submission', 'NA'), r.get('start', 'NA'), r.get('end', 'NA')])
-            count -= 1
-            if count == 0:
-                break
-
+            jsons.append( r )
     else:
         if as_json:
             print(json.dumps(st))
@@ -312,11 +307,6 @@ def workflows(from_date:str=None, to_date:str=None, status:list=None, names:list
         sys.exit(10)
 
     return jsons
-
-    if as_json:
-        print(json.dumps(jsons))
-    else:
-        print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
         
 
 def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0) -> None:
