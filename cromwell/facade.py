@@ -216,7 +216,7 @@ def export_workflow_outputs(args:list, outdir:str=".") -> None:
                         continue
 
                     print (f"Moving {of} -- > {outdir}/{outfile}")
-#                    shutil.move(of, f"{outdir}/{outfile}")
+                    shutil.move(of, f"{outdir}/{outfile}")
 
 
 def workflow_meta(args, as_json:bool=False) -> None:
