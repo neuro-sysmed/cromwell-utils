@@ -228,10 +228,10 @@ def workflows_subcmd(args, limit:int=-1) -> None:
 
             res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA'), runtime])
 
-        res = sorted(res, key=lambda x: int(x[3], reverse=True))
+        res = sorted(res, key=lambda x: int(x[3]), reverse=True)
 
-        if limit > 0:
-            res = res[0:10]
+        if int(limit) > 0:
+            res = res[0:int(limit)]
 
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
@@ -380,6 +380,9 @@ def main():
                         default=args_utils.get_env_var('CROMWELL'))
     parser.add_argument('-j', '--json-output', help="print the outputs in json format",
                         action="store_true", default=False)
+
+#    parser.add_argument('-I', '--id-only', help="Only print ID's for further processing",
+#                        action="store_true", default=False)
 
     parser.add_argument('-l', '--limit', help="top number of results to show", default=-1)
     parser.add_argument('-i', '--interval', help="update interval when monitoring", default=60)
