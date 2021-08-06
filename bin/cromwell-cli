@@ -56,7 +56,7 @@ def cromwell_info() -> None:
 
 def workflow_subcmd(args) -> None:
     commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
-                    'o':'outputs', 't': 'timing', 'm':'meta', 'la': 'labels', 'e': 'export', 'h':'help'}
+                    'o':'outputs', 't': 'timing', 'm':'meta', 'lg': 'labels-get', 'ls': 'labels-set', 'e': 'export', 'h':'help'}
 
 
     args_utils.min_count(1, len(args),
@@ -85,16 +85,11 @@ def workflow_subcmd(args) -> None:
         cromwell_facade.workflow_timing(args, as_json=as_json)
     elif command == 'meta':
         cromwell_facade.workflow_meta(args, as_json=as_json)
-    elif command == 'labels':
-        sub_cmd = args_utils.get_or_fail(args, "Need either get or set")
-        if sub_cmd == 'get':
+    elif command == 'labels-get':
             cromwell_facade.workflow_labels_get(args, as_json=as_json)
-        elif sub_cmd == 'set':
+    elif command == 'labels-set':
             wf_id = args_utils.get_or_fail(args, "workflow id is required")
-            cromwell_facade.workflow_labels_set(wf_id, args)
-        else:
-            print("provide either get or set for workflow labels")
-
+            cromwell_facade.workflow_labels_set(args, as_json=as_json)
     else:
 
         print("Help:")
