@@ -228,7 +228,7 @@ def workflows_subcmd(args, limit:int=-1) -> None:
 
             res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA'), runtime])
 
-        res = sorted(res, key=lambda x: int(x[3]), reverse=True)
+        res = sorted(res, key=lambda x: x[3], reverse=True)
 
         if int(limit) > 0:
             res = res[0:int(limit)]
