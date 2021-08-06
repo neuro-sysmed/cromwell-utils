@@ -10,6 +10,7 @@ import pytz
 
 import kbr.args_utils as args_utils
 import kbr.datetime_utils as datetime_utils
+import kbr.file_utils as file_utils
 
 import cromwell.api as cromwell_api
 
@@ -201,12 +202,19 @@ def export_workflow_outputs(args:list, outdir:str=".") -> None:
                     if not os.path.isfile( of ):
                         print(f"{of} no longer on disk...")
                         continue
-                    
+
                     print( of )
                     if of is None:
                         continue
                     outfile = re.sub(r'.*\/execution/', '', of)
                     outfile = re.sub(r'^./', '', outfile)
+                    if os.path.isfile( f"{outdir}/{outfile}" ):
+                        if file_utils.size(of) == file_utils.size(f"{outdir}/{outfile}" ):
+                            print(f"{outfile} is already present in {outdir} and files have the same size")
+                        else:
+                            print(f"{outfile} is already present in {outdir} and files have differnt sizes")
+                        continue
+
                     print (f"Moving {of} -- > {outdir}/{outfile}")
 #                    shutil.move(of, f"{outdir}/{outfile}")
 
