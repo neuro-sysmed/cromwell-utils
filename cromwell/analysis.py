@@ -47,23 +47,26 @@ def write_tmp_json(data) -> str:
 
 def outdir_json(outdir:str=None) -> str:
 
+    return None
+
     if outdir is None:
         return None
 
     return write_tmp_json({"final_workflow_outputs_dir": outdir, "use_relative_output_paths": True})
 
+def labels_json(workflow:str, env:str, sample:str, outdir:str=None ) -> str:
+    data = {"env": env, "user": getpass.getuser(), "workflow": workflow, 'sample':sample}
 
-def labels_json(workflow:str, env:str, sample:str ) -> str:
-    return write_tmp_json({"env": env, "user": getpass.getuser(), "workflow": workflow, 'sample':sample})
+    if outdir is not None:
+        data['outdir'] = outdir
+
+    return write_tmp_json(data)
 
 
 def del_files(*files) -> None:
     for f in files:
         if f is not None and os.path.isfile( f ):
             os.remove(f)
-
-
-
 
 def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
 
@@ -103,7 +106,7 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
 
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env=env,sample=name)
+    tmp_labels = labels_json(workflow='salmon', env=env,sample=name, outdir=outdir)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
@@ -154,15 +157,12 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
 
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='variantcalling', env=env, sample=name)
+    tmp_labels = labels_json(workflow='variantcalling', env=env, sample=name, outdir=outdir)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
     del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
-
-
-
 
 def bams_to_ubams(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
     
@@ -172,7 +172,7 @@ def bams_to_ubams(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:s
     for arg in args:
         data = {"BamToUnalignedBam.input_bam": os.path.abspath( arg )}
         tmp_inputs = write_tmp_json( data )
-        tmp_labels = labels_json(workflow='bams-to-ubams', env=env, sample=arg)
+        tmp_labels = labels_json(workflow='bams-to-ubams', env=env, sample=arg, outdir=outdir)
         st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
         del_files( tmp_inputs, tmp_labels)
 
@@ -201,7 +201,7 @@ def fqs_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str
     tmp_options = outdir_json( outdir )
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
     tmp_inputs = write_tmp_json( data )
-    tmp_labels = labels_json(workflow='fqs-to-ubam', env=env, sample=out_name)
+    tmp_labels = labels_json(workflow='fqs-to-ubam', env=env, sample=out_name, outdir=outdir)
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
     del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
@@ -228,7 +228,7 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
 
     tmp_inputs = write_tmp_json( indata )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env=env, sample=name)
+    tmp_labels = labels_json(workflow='salmon', env=env, sample=name, outdir=outdir)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     if env == 'development':

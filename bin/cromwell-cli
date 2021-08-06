@@ -132,8 +132,8 @@ def print_workflows(data:list, as_json:bool=False, brief:bool=False) -> None:
 
 
 
-def workflows_subcmd(args) -> None:
-    commands = {'a':'all', 'l':'last', 'd': 'days', 'h':'hours','s': 'status', 'n': 'name', 'i':'id', 'la': 'label', 'da':'date', 'q':'query', 'h':'help'}
+def workflows_subcmd(args, limit:int=-1) -> None:
+    commands = {'a':'all', 'd': 'days', 'h':'hours','s': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'da':'date', 'q':'query', 'h':'help'}
 
     brief = False
     if 'brief' in args:
@@ -227,7 +227,12 @@ def workflows_subcmd(args) -> None:
                 runtime = str(end_time - start_time)
 
             res.append([ r['id'], r.get('name','NA'), r['status'], r['submission'], r.get('start', 'NA'), r.get('end', 'NA'), runtime])
-        res = sorted( res, key=lambda x:x[4], reverse=True)
+
+        res = sorted(res, key=lambda x: int(x[3], reverse=True))
+
+        if limit > 0:
+            res = res[0:10]
+
         print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
 
@@ -375,6 +380,8 @@ def main():
                         default=args_utils.get_env_var('CROMWELL'))
     parser.add_argument('-j', '--json-output', help="print the outputs in json format",
                         action="store_true", default=False)
+
+    parser.add_argument('-l', '--limit', help="top number of results to show", default=-1)
     parser.add_argument('-i', '--interval', help="update interval when monitoring", default=60)
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
     parser.add_argument('command', nargs='*', help="{}".format(args_utils.pretty_commands(commands)))   
@@ -394,7 +401,7 @@ def main():
     if command == 'workflow':
         workflow_subcmd(args.command)
     elif command == 'workflows':
-        workflows_subcmd(args.command)
+        workflows_subcmd(args.command, limit=args.limit)
     elif command == 'monitor':
         monitor_subcmd(args.command, args.interval)
     elif command == 'cleanup':
