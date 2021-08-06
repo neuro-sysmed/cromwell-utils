@@ -179,29 +179,36 @@ def export_workflow_outputs(args:list, outdir:str=".") -> None:
     args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
     for wf_id in args:
         st = cromwell_api.workflow_outputs(wf_id)
+        if outdir is None:
+
+            labels = cromwell_api.workflow_labels_get(wf_id)
+            if 'outdir' in st['labels']:
+                print('taking outdir from label')
+                outdir = st['labels']['outdir']
+            else:
+                print('Exporting to cwd')
+                outdir = os.getcwd()
+
         if 'status' in st:
             print(f'Cannot export output files for {st["id"]} as status is {st["status"]}')
         else:
-            os.makedirs(f"{outdir}/qc/", exist_ok=True)
-            os.makedirs(f"{outdir}/bams/", exist_ok=True)
-            os.makedirs(f"{outdir}/vcfs/", exist_ok=True)
             for output in st['outputs']:
                 _, name = output.split(".")
                 if not isinstance(st['outputs'][output], list):
                     st['outputs'][output] = [st['outputs'][output]]
+
                 for of in st['outputs'][output]:
+                    if not os.path.isfile( of ):
+                        print(f"{of} no longer on disk...")
+                        continue
+                    
                     print( of )
                     if of is None:
                         continue
-                    outfile = re.sub(r'.*\/', '', of)
-                    if name.startswith("qc"):
-                        shutil.copy(of, f"{outdir}/qc/{outfile}")
-                    elif "vcf" in name:
-                        shutil.copy(of, f"{outdir}/vcfs/{outfile}")
-                    elif "bam" in  name:
-                        shutil.copy(of, f"{outdir}/bams/{outfile}")
-                    else:
-                        shutil.copy(of, f"{outdir}/{outfile}")
+                    outfile = re.sub(r'.*\/execution/', '', of)
+                    outfile = re.sub(r'^./', '', outfile)
+                    print (f"Moving {of} -- > {outdir}/{outfile}")
+#                    shutil.move(of, f"{outdir}/{outfile}")
 
 
 def workflow_meta(args, as_json:bool=False) -> None:
@@ -236,7 +243,7 @@ def workflow_meta(args, as_json:bool=False) -> None:
         print(json.dumps(jsons))
 
 def workflows(from_date:str=None, to_date:str=None, status:list=None, names:list=None, ids:list=None, labels:list=None, 
-              query:bool=False, as_json:bool=False, count:int=-1) -> None:
+              query:bool=False, as_json:bool=False) -> None:
     data = []
 
     filter = {}
