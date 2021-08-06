@@ -55,6 +55,9 @@ def outdir_json(outdir:str=None) -> str:
     return write_tmp_json({"final_workflow_outputs_dir": outdir, "use_relative_output_paths": True})
 
 def labels_json(workflow:str, env:str, sample:str, outdir:str=None ) -> str:
+
+    sample = re.sub(r'.*\/', '', sample)
+
     data = {"env": env, "user": getpass.getuser(), "workflow": workflow, 'sample':sample}
 
     if outdir is not None:
