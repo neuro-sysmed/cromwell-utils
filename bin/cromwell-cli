@@ -33,19 +33,6 @@ import cromwell.utils as cromwell_utils
 version = version_utils.as_string('cromwell-utils')
 as_json = False
 
-def read_args(filename:str) -> list:
-
-    if filename == '-':
-        file_handle = sys.stdin
-    else:
-        file_handle = open(filename, 'r')
-
-    content = file_handle.read()
-    file_handle.close()
-
-    args = re.sub("\n", ' ', content).split()
-    return args
-
 
 
 def group_args(args) -> dict:
@@ -411,7 +398,7 @@ def main():
         as_json = True
 
     if args.from_file:
-        args.command +=  read_args( args.from_file)
+        args.command +=  cromwell_utils.read_args( args.from_file)
 
     args_utils.min_count(1, len(args.command),
                          msg="cromwell-cli takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))

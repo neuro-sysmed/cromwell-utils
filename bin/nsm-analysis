@@ -221,6 +221,7 @@ def main():
 
     parser = argparse.ArgumentParser(description=f'nsm-analysis: command line tool for nsm-pipelines ({version})')
 
+    parser.add_argument('-f', '--from-file', help="args read from file, for stdin use: '-'")
     parser.add_argument('-r', '--reference', help="reference to use: hg38(default), hg19", default="hg38")
     parser.add_argument('-o', '--outdir', help="where to export results to, default working directory")
 
@@ -235,6 +236,9 @@ def main():
     args = parser.parse_args()
 
     init(args)
+
+    if args.from_file:
+        args.command +=  cromwell_utils.read_args( args.from_file)
 
     args_utils.min_count(1, len(args.command),
                          msg="nsm-analysis takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))

@@ -10,6 +10,21 @@ import kbr.file_utils as file_utils
 import kbr.run_utils as run_utils
 
 
+def read_args(filename:str) -> list:
+
+    if filename == '-':
+        file_handle = sys.stdin
+    else:
+        file_handle = open(filename, 'r')
+
+    content = file_handle.read()
+    file_handle.close()
+
+    args = re.sub("\n", ' ', content).split()
+    return args
+
+
+
 def find_files(path:str, pattern:str) -> list:
 
     if pattern.startswith("*"):
