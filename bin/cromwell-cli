@@ -91,7 +91,7 @@ def workflow_subcmd(args) -> None:
             cromwell_facade.workflow_labels_get(args, as_json=as_json)
     elif command == 'labels-set':
             wf_id = args_utils.get_or_fail(args, "workflow id is required")
-            cromwell_facade.workflow_labels_set(args, as_json=as_json)
+            cromwell_facade.workflow_labels_set(wf_id, args, as_json=as_json)
     else:
 
         print("Help:")
