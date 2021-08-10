@@ -217,6 +217,7 @@ def export_workflow_outputs(args:list, outdir:str=".") -> None:
 
                     print (f"Moving {of} -- > {outdir}/{outfile}")
                     shutil.move(of, f"{outdir}/{outfile}")
+                    cromwell_api.workflow_labels_set(wf_id=wf_id, data={'exported': True})
 
 
 def workflow_meta(args, as_json:bool=False) -> None:
@@ -416,3 +417,4 @@ def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None, )
 
     for id in ids:
         cleanup_workflow(action, id)
+        cromwell_api.workflow_labels_set(id, f"cleanup:{action}")
