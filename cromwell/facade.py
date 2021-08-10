@@ -374,7 +374,7 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
                 print(f"keeping {shard_rootdir} as status is {shard_status} ")
                 continue
 
-            if shard_end < datetime.now()- timedelta(hours=24):
+            if shard_end < datetime.now(pytz.utc)- timedelta(hours=24):
                 print( "Keeping call folder, not old enough!")
                 continue
 
