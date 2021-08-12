@@ -34,7 +34,6 @@ version = version_utils.as_string('cromwell-utils')
 as_json = False
 nsm_root = '/usr/local/lib/nsm-analysis'
 #nsm_root = '/home/brugger/projects/nsm/nsm-analysis'
-
 nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 
 
@@ -86,7 +85,7 @@ def workflow_subcmd(args) -> None:
     elif command == 'export':
         cromwell_facade.export_workflow_outputs(args)
     elif command == 'resubmit':
-        cromwell_facade.resubmit_workflow(args, wdl_zip=nsm_zip, as_json=as_json)
+        cromwell_facade.resubmit_workflows(args, wdl_zip=nsm_zip, as_json=as_json)
 #    elif command == 'timing':
 #        sys.exit(10)
 #        print('not done yet, do we need this? outputs a html page')

@@ -6,6 +6,7 @@ import sys
 import json
 from datetime import datetime, timedelta
 import tabulate
+import tempfile
 import pytz
 
 import kbr.args_utils as args_utils
@@ -100,24 +101,24 @@ def del_files(*files) -> None:
             os.remove(f)
 
 
-def resubmit_workflow(args:list, wdl_zip:str=None, as_json:bool=False) -> None:
+def resubmit_workflows(args:list, wdl_zip:str=None, as_json:bool=False) -> None:
 
-    wf_id = args_utils.get_or_fail(args, "workflow id is required")
-    wf_meta = cromwell_api.workflow_meta(wf_id=wf_id)[0]
+    for wf_id in args:
+        wf_meta = cromwell_api.workflow_meta(wf_id=wf_id)
 
-    options  = wf_meta['submittedFiles'].get('options', None)
-    labels   = wf_meta['submittedFiles'].get('labels', None)
-    inputs   = wf_meta['submittedFiles'].get('inputs', None)
-    workflow = wf_meta['submittedFiles'].get('workflow' , None)
+        options  = wf_meta['submittedFiles'].get('options', None)
+        labels   = wf_meta['submittedFiles'].get('labels', None)
+        inputs   = wf_meta['submittedFiles'].get('inputs', None)
+        workflow = wf_meta['submittedFiles'].get('workflow' , None)
 
-    tmp_options = write_to_tmpfile( options )
-    tmp_labels  = write_to_tmpfile( labels )
-    tmp_inputs  = write_to_tmpfile( inputs )
-    tmp_wf_file = write_to_tmpfile( workflow )
+        tmp_options = write_to_tmpfile( options )
+        tmp_labels  = write_to_tmpfile( labels )
+        tmp_inputs  = write_to_tmpfile( inputs )
+        tmp_wf_file = write_to_tmpfile( workflow )
 
-    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
-    print(f"{st['id']}: {st['status']}")
-    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+        st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+        print(f"{st['id']}: {st['status']}")
+        del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
     
 
 
