@@ -32,6 +32,10 @@ import cromwell.utils as cromwell_utils
 
 version = version_utils.as_string('cromwell-utils')
 as_json = False
+nsm_root = '/usr/local/lib/nsm-analysis'
+#nsm_root = '/home/brugger/projects/nsm/nsm-analysis'
+
+nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 
 
 
@@ -57,8 +61,8 @@ def cromwell_info() -> None:
 
 
 def workflow_subcmd(args) -> None:
-    commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'l': 'logs',
-                    'o':'outputs', 't': 'timing', 'm':'meta', 'lg': 'labels-get', 'ls': 'labels-set', 'e': 'export', 'h':'help'}
+    commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'r':'resubmit', 'l': 'logs',
+                    'o':'outputs',  'm':'meta', 'lg': 'labels-get', 'ls': 'labels-set', 'e': 'export', 'h':'help'} #'t': 'timing',
 
 
     args_utils.min_count(1, len(args),
@@ -70,7 +74,7 @@ def workflow_subcmd(args) -> None:
     if command == 'submit':
         cromwell_facade.submit_workflow(args, as_json=as_json)
     elif command == 'batch':
-        cromwell_facade.batch_submit_workflow(args, as_json=as_json)
+        cromwell_facade.batch_submit_workflow(args, as_json=as_json)        
     elif command == 'status':
         cromwell_facade.workflow_status(args, as_json=as_json)
     elif command == 'abort':
@@ -81,10 +85,12 @@ def workflow_subcmd(args) -> None:
         cromwell_facade.workflow_outputs(args, as_json=as_json)
     elif command == 'export':
         cromwell_facade.export_workflow_outputs(args)
-    elif command == 'timing':
-        sys.exit(10)
-        print('not done yet, do we need this? outputs a html page')
-        cromwell_facade.workflow_timing(args, as_json=as_json)
+    elif command == 'resubmit':
+        cromwell_facade.resubmit_workflow(args, wdl_zip=nsm_zip, as_json=as_json)
+#    elif command == 'timing':
+#        sys.exit(10)
+#        print('not done yet, do we need this? outputs a html page')
+#        cromwell_facade.workflow_timing(args, as_json=as_json)
     elif command == 'meta':
         cromwell_facade.workflow_meta(args, as_json=as_json)
     elif command == 'labels-get':

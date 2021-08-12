@@ -82,6 +82,45 @@ def batch_submit_workflow(args, as_json:bool=False) -> None:
             print(f'{s["id"]}\t{s["status"]}\t')
 
 
+def write_to_tmpfile(data) -> str:
+
+    if data is None:
+        return None
+
+    tmpfile = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    tmpfile.write( data)
+#    json.dump(data, tmpfile.file)
+    tmpfile.close()
+
+    return tmpfile.name
+
+def del_files(*files) -> None:
+    for f in files:
+        if f is not None and os.path.isfile( f ):
+            os.remove(f)
+
+
+def resubmit_workflow(args:list, wdl_zip:str=None, as_json:bool=False) -> None:
+
+    wf_id = args_utils.get_or_fail(args, "workflow id is required")
+    wf_meta = cromwell_api.workflow_meta(wf_id=wf_id)[0]
+
+    options  = wf_meta['submittedFiles'].get('options', None)
+    labels   = wf_meta['submittedFiles'].get('labels', None)
+    inputs   = wf_meta['submittedFiles'].get('inputs', None)
+    workflow = wf_meta['submittedFiles'].get('workflow' , None)
+
+    tmp_options = write_to_tmpfile( options )
+    tmp_labels  = write_to_tmpfile( labels )
+    tmp_inputs  = write_to_tmpfile( inputs )
+    tmp_wf_file = write_to_tmpfile( workflow )
+
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+    
+
+
 
 def workflow_status(args, as_json:bool=False) -> None:
 
@@ -176,6 +215,8 @@ def workflow_outputs(args:list, as_json:bool=False) -> None:
 
     if as_json:
         print(json.dumps(jsons))
+
+
 
 
 
