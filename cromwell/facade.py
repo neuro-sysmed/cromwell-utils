@@ -122,7 +122,7 @@ def workflow_labels_get(args, as_json:bool=False) -> None:
     if as_json:
         print(json.dumps(jsons))
 
-def workflow_labels_set(wf_id:str, args:list, as_json:bool=False) -> None:
+def workflow_labels_set(wf_id:str, args:list, as_json:bool=False, quiet:bool=False) -> None:
 
     data  = {}
     for label in args:
@@ -130,6 +130,10 @@ def workflow_labels_set(wf_id:str, args:list, as_json:bool=False) -> None:
         data[key] = value
 
     st = cromwell_api.workflow_labels_set(wf_id, data)
+
+    if quiet:
+        return
+
     if as_json:
         print(json.dumps(st))
     else:
@@ -325,8 +329,7 @@ def workflows(from_date:str=None, to_date:str=None, status:list=None, names:list
     return jsons
         
 
-def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0) -> None:
-    st = cromwell_api.workflow_outputs(wf_id)
+def cleanup_workflow(action:str, wf_id:str, keep_running_wfs:bool=True) -> None:
     outputs = {}
 
     meta = cromwell_api.workflow_meta(wf_id)
@@ -334,6 +337,8 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
     status  = meta.get('status', None)
     start   = meta.get('start', None)
     end     = meta.get('end', None)
+
+    workflow_stats = ['Submitted', 'Running', 'Aborting', 'Failed', 'Succeeded', 'Aborted']
 
 
     if action == 'nuke':
@@ -353,37 +358,30 @@ def cleanup_workflow(action:str, wf_id:str, done_only:bool=True, hours_ago:int=0
                      "stdout", "stderr", "script.submit" ]
 
     kf = cromwell_api.workflow_outputs(wf_id)
-    keep_files = []
+    output_files = []
     for kf in list(kf['outputs'].values()):
         if isinstance(kf, list):
-            keep_files += list(kf)
+            output_files += list(kf)
         elif kf is not None:
-            keep_files.append( kf )
+            output_files.append( kf )
 
 
     for call in meta['calls']:
         for shard in meta['calls'][call]:
             shard_status = shard.get('executionStatus', None)
-            shard_start  = shard.get('start', None)
-            shard_end  = datetime_utils.to_datetime( shard.get('end', None) )
             shard_rootdir = shard.get('callRoot', None)
-            shard_outputs = shard.get('outputs', {})
 
-
-            if done_only and  shard_status != 'Done':
+            if keep_running_wfs and shard_status not in ['Submitted', 'Running', 'Aborting']:
                 print(f"keeping {shard_rootdir} as status is {shard_status} ")
                 continue
 
-            if shard_end < datetime.now(pytz.utc)- timedelta(hours=24):
-                print( "Keeping call folder, not old enough!")
-                continue
-
             if action == 'tmpfiles':
-                delete_workflow_files( shard_rootdir, list(keep_files + wf_keep_files))
+                delete_workflow_files( shard_rootdir, list(output_files + wf_keep_files))
             elif action == 'files':
                 delete_workflow_files( shard_rootdir, wf_keep_files)
             else:
                 raise RuntimeError(f'{action} is an unknown cleanup action, allowed: tmpfiles, files or nuke')
+
 
 
 def delete_workflow_files(root_dir:str, keep_list:list) -> None:
@@ -403,18 +401,22 @@ def delete_workflow_files(root_dir:str, keep_list:list) -> None:
 
 def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None, ) -> None:
 
-    if ids is None:
-        if time_type == 'days':
-            from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(time_span)) )
-        elif time_type == 'hours':
-            from_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
+    keep_running = False
 
-        workflows_data = workflows(from_date=from_date, as_json=True, query=True)
+    if ids is None:
+        keep_running = True
+        if time_type == 'days':
+            to_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(time_span)) )
+        elif time_type == 'hours':
+            to_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
+
+        workflows_data = workflows(to_date=to_date, as_json=True, query=True)
         ids = []
         for workflow in workflows_data:
             ids.append(workflow['id'])
 
 
     for id in ids:
-        cleanup_workflow(action, id)
-        cromwell_api.workflow_labels_set(id, f"cleanup:{action}")
+        cleanup_workflow(action=action, wf_id=id, keep_running_wfs=keep_running)
+        workflow_labels_set(id, [f"cleanup:{action}"])
+
