@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+import argparse
+from datetime import datetime, timedelta
+import time
+import json
+
+sys.path.append('/cluster/lib/python3.6/site-packages/')
+sys.path.append('/cluster/lib64/python3.6/site-packages/')
+
+import pytz
+from tabulate import tabulate
+
+import kbr.args_utils as args_utils
+import kbr.version_utils as version_utils
+import kbr.string_utils as string_utils
+import kbr.datetime_utils as datetime_utils
+import kbr.file_utils as file_utils
+import kbr.args_utils as args_utils
+
+import cromwell.azure as azure
+
+
+version = version_utils.as_string('cromwell-utils')
+
+
+def vms_subcmd(args:list) -> None:
+    commands = {'l': 'list', 'd': 'delete', 'c': 'create',  'h':'help'}
+
+    args_utils.min_count(1, len(args),
+                         msg="workflow takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
+
+    command = args.pop(0)
+    command = args_utils.valid_command(command, commands)
+
+    if command == 'list':
+        servers = azure.servers()
+        for server in servers:
+            server['ip'] = ','.join(server['ip'])
+
+
+        print(tabulate(servers, 
+                       headers={'vm_id': 'id', 'name': 'name', 'vm_state': 'vm-state', 'slurm_state': 'slurm-state'},
+                       tablefmt="psql"))
+
+
+#'s':'subscriptions',
+
+
+
+def main():
+
+    commands = {'v': 'vms', 's': 'storage', 'u': 'unconnected', 'u': 'utils', 'h':'help'}
+    parser = argparse.ArgumentParser(description=f'azure-cli: command line tool for the interacting with azure ({version})')
+
+    parser.add_argument('-c', '--config', help="config file, or set env CROMWELL",
+                        default=args_utils.get_env_var('CROMWELL'))
+    parser.add_argument('-j', '--json-output', help="print the outputs in json format",
+                        action="store_true", default=False)
+
+    parser.add_argument('-I', '--id-only', help="Only print ID's for further processing",
+                         action="store_true", default=False)
+
+    parser.add_argument('-f', '--from-file', help="args read from file, for stdin use: '-'")
+    parser.add_argument('-l', '--limit', help="top number of results to show", default=-1)
+    parser.add_argument('-i', '--interval', help="update interval when monitoring", default=60)
+    parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
+
+    parser.add_argument('command', nargs='*', help="{}".format(args_utils.pretty_commands(commands)))   
+
+    args = parser.parse_args()
+
+    if args.json_output:
+        global as_json
+        as_json = True
+
+    if args.from_file:
+        args.command +=  cromwell_utils.read_args( args.from_file)
+
+    args_utils.min_count(1, len(args.command),
+                         msg="azure-cli takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
+
+    command = args.command.pop(0)
+    command = args_utils.valid_command(command, commands)
+
+    azure.connect()
+
+    if command == 'vms':
+        vms_subcmd(args.command)
+    elif command == 'storage':
+        storage_subcmd(args.command, limit=args.limit, ids_only=args.id_only)
+    elif command == 'unconnected':
+        unconnected_subcmd(args.command, args.interval)
+    elif command == 'utils':
+        utils_subcmd(args.command, args.interval)
+    else:
+        print("The tool support the following commands: {}\n".format(args_utils.pretty_commands(commands)))
+        parser.print_usage()
+#        parser.add_argument('command', nargs='+', help="{}".format(",".join(commands)))
+        sys.exit(1)
+
+
+
+if __name__ == "__main__":
+    main()
+
