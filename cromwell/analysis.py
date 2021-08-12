@@ -109,7 +109,7 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
 
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='salmon', env=env,sample=name, outdir=outdir)
+    tmp_labels = labels_json(workflow=analysis, env=env,sample=name, outdir=outdir)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
