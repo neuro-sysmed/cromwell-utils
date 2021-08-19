@@ -170,10 +170,7 @@ def print_workflows_analysis(data:list, as_json:bool=False) -> None:
                             running[ call ] = 0
                         running[ call ] += 1
 
-    print("Workflow states:")
-    print("----------------")
-
-    res = [['name', 'status', 'count']]
+    res = [['Workflow', 'status', 'count']]
     for name in counts:
         for status in counts[name]:
             res.append([name, status, counts[name][status]])
@@ -181,8 +178,6 @@ def print_workflows_analysis(data:list, as_json:bool=False) -> None:
     print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
     print("\n")
-    print("Running:")
-    print("----------------")
 
     res = [['Step', 'count']]
     for name in running:
@@ -192,8 +187,6 @@ def print_workflows_analysis(data:list, as_json:bool=False) -> None:
 
 
     print("\n")
-    print("Failures:")
-    print("----------------")
 
     res = [['Failures', 'count']]
     for name in fails:
