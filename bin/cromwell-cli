@@ -179,7 +179,7 @@ def print_workflows_analysis(data:list, as_json:bool=False) -> None:
 
     print("\n")
 
-    res = [['Step', 'count']]
+    res = [['Current step', 'count']]
     for name in running:
         res.append([name, running[name]])
 
