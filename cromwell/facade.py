@@ -468,17 +468,20 @@ def workflow_fails(args:list, as_json:bool=False) -> None:
     args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
     jsons = []
     for wf_id in args:
-        st = cromwell_api.workflow_outputs(wf_id)
+        st = cromwell_api.workflow_meta(wf_id)
 
         if 'calls' in st:
             for call in st['calls']:
                 for shard in st['calls'][call]:
-                    if "executionStatus" in st['calls'][call][shard] and st['calls'][call][shard]['executionStatus'] == 'Failed':                        
+                    if "executionStatus" in shard and shard['executionStatus'] == 'Failed':                        
                         print(f"{wf_id}\t{call}")
-        if 'failures' in st:
-            if "causedBy" in st['failures']:
-                for cb in st['failures'][ 'causedBy' ]:
-                    print(cb['message'])
+
+        if False and 'failures' in st:
+            for failure in st['failures']:
+                if "causedBy" in failure:
+                    for cb in failure[ 'causedBy' ]:
+                        print(cb['message'])
+
 
 #    if as_json:
 #        print(json.dumps(jsons))
@@ -490,12 +493,12 @@ def workflow_overview(args:list, as_json:bool=False) -> None:
     args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
     jsons = []
     for wf_id in args:
-        st = cromwell_api.workflow_outputs(wf_id)
+        st = cromwell_api.workflow_meta(wf_id)
 
         if 'calls' in st:
             for call in st['calls']:
                 for shard in st['calls'][call]:
-                   print(f"{wf_id}\t{st['calls'][call][shard]}\t{st['calls'][call][shard]['executionStatus']}")
+                   print(f"{wf_id}\t{call}\t{shard['executionStatus']}")
 
 
 
