@@ -61,7 +61,8 @@ def cromwell_info() -> None:
 
 def workflow_subcmd(args) -> None:
     commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'r':'resubmit', 'l': 'logs',
-                    'o':'outputs',  'm':'meta', 'lg': 'labels-get', 'ls': 'labels-set', 'e': 'export', 'h':'help'} #'t': 'timing',
+                    'o':'outputs',  'm':'meta', 'lg': 'labels-get', 'ls': 'labels-set', 'e': 'export', 
+                    'f':'fails', 'o': 'overview', 'h':'help'} #'t': 'timing',
 
 
     args_utils.min_count(1, len(args),
@@ -97,6 +98,11 @@ def workflow_subcmd(args) -> None:
     elif command == 'labels-set':
             wf_id = args_utils.get_or_fail(args, "workflow id is required")
             cromwell_facade.workflow_labels_set(wf_id, args, as_json=as_json)
+    elif command == 'fails':
+            cromwell_facade.workflow_fails(args, as_json=as_json)
+    elif command == 'overview':
+            cromwell_facade.workflow_overview(args, as_json=as_json)
+
     else:
 
         print("Help:")
@@ -111,6 +117,8 @@ def workflow_subcmd(args) -> None:
         print("workflow labels set [job-ids] [labels]")
         print("workflow outputs [job-ids]")
         print("workflow meta [job-ids]")
+        print("workflow fails [job-ids]")
+        print("workflow overview [job-ids]")
         sys.exit(1)
 
 

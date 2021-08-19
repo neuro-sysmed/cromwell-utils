@@ -462,3 +462,47 @@ def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None, )
         cleanup_workflow(action=action, wf_id=id, keep_running_wfs=keep_running)
         workflow_labels_set(id, [f"cleanup:{action}"])
 
+
+def workflow_fails(args:list, as_json:bool=False) -> None:
+
+    args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
+    jsons = []
+    for wf_id in args:
+        st = cromwell_api.workflow_outputs(wf_id)
+
+        if 'calls' in st:
+            for call in st['calls']:
+                for shard in st['calls'][call]:
+                    if "executionStatus" in st['calls'][call][shard] and st['calls'][call][shard]['executionStatus'] == 'Failed':                        
+                        print(f"{wf_id}\t{call}")
+        if 'failures' in st:
+            if "causedBy" in st['failures']:
+                for cb in st['failures'][ 'causedBy' ]:
+                    print(cb['message'])
+
+#    if as_json:
+#        print(json.dumps(jsons))
+
+
+
+def workflow_overview(args:list, as_json:bool=False) -> None:
+
+    args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
+    jsons = []
+    for wf_id in args:
+        st = cromwell_api.workflow_outputs(wf_id)
+
+        if 'calls' in st:
+            for call in st['calls']:
+                for shard in st['calls'][call]:
+                   print(f"{wf_id}\t{st['calls'][call][shard]}\t{st['calls'][call][shard]['executionStatus']}")
+
+
+
+#        if as_json:
+#            jsons.append( st )
+
+#    if as_json:
+#        print(json.dumps(jsons))
+
+
