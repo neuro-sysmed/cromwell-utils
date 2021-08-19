@@ -155,9 +155,11 @@ def print_workflows_analysis(data:list, as_json:bool=False) -> None:
             counts[name][status] = 0
         counts[name][status] += 1
 
-        if 'calls' in r:
-            for call in r['calls']:
-                for shard in r['calls'][call]:
+        meta = cromwell_api.workflow_meta(r['id'])
+
+        if 'calls' in meta:
+            for call in meta['calls']:
+                for shard in meta['calls'][call]:
                     if "executionStatus" in shard and shard['executionStatus'] == 'Failed':
                         if call not in fails:
                             fails[ call ] = 0
