@@ -142,17 +142,83 @@ def print_workflows(data:list, as_json:bool=False, brief:bool=False) -> None:
 
 
 
+def print_workflows_analysis(data:list, as_json:bool=False) -> None:
+    counts  = {}
+    fails   = {}
+    running = {}
+    for r in data:
+        name = r.get('name', 'NA')
+        status = r['status']
+        if name not in counts:
+            counts[name] = {}
+        if status not in counts[name]:
+            counts[name][status] = 0
+        counts[name][status] += 1
+
+        if 'calls' in r:
+            for call in r['calls']:
+                for shard in r['calls'][call]:
+                    if "executionStatus" in shard and shard['executionStatus'] == 'Failed':
+                        if call not in fails:
+                            fails[ call ] = 0
+                        fails[ call ] += 1
+
+                    if "executionStatus" in shard and shard['executionStatus'] == 'Running':
+                        if call not in running:
+                            running[ call ] = 0
+                        running[ call ] += 1
+
+    print("Workflow states:")
+    print("----------------")
+
+    res = [['name', 'status', 'count']]
+    for name in counts:
+        for status in counts[name]:
+            res.append([name, status, counts[name][status]])
+
+    print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
+
+    print("\n")
+    print("Running:")
+    print("----------------")
+
+    res = [['Step', 'count']]
+    for name in running:
+        res.append([name, running[name]])
+
+    print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
+
+
+    print("\n")
+    print("Failures:")
+    print("----------------")
+
+    res = [['Failures', 'count']]
+    for name in fails:
+        res.append([name, fails[name]])
+
+    print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
+
+
+
+
+
+
 def workflows_subcmd(args, limit:int=-1, ids_only:bool=False) -> None:
     commands = {'a':'all', 'd': 'days', 'h':'hours','s': 'status', 'n': 'name', 'i':'id', 'l': 'label', 'da':'date', 'q':'query', 'h':'help'}
+
+    if 'b' in args:
+        args[ args.index( 'b')] = 'brief'
 
     brief = False
     if 'brief' in args:
         brief = True
         del args[ args.index( 'brief')]
 
-    if 'b' in args:
-        brief = True
-        del args[ args.index( 'b')]
+    meta = False
+    if 'meta' in args:
+        meta = True
+        del args[ args.index( 'meta')]
 
     if len(args) == 0:
         args.append('l')
@@ -220,7 +286,8 @@ def workflows_subcmd(args, limit:int=-1, ids_only:bool=False) -> None:
         print(json.dumps(data))
     elif brief:
         print_workflows(data, as_json, brief)
-
+    elif meta:
+        print_workflows_analysis(data, as_json)
     else:
         res = [["id", "name", "status", "submitted", "started", "ended", "runtime"]]
         for r in data:
