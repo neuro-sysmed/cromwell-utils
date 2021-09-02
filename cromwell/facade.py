@@ -245,6 +245,9 @@ def export_workflow_outputs(args:list, outdir:str=".") -> None:
                     st['outputs'][output] = [st['outputs'][output]]
 
                 for of in st['outputs'][output]:
+                    if of is None:
+                        continue
+                    
                     if not os.path.isfile( of ):
                         print(f"{of} no longer on disk...")
                         continue
