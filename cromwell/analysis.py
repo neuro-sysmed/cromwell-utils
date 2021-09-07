@@ -131,6 +131,48 @@ def exomes_genomes(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:s
 
 
 
+def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+
+    name = args_utils.get_or_fail(args, "Sample name is missing")
+    args_utils.min_count(1, len(args), msg="One or more ubams required.")
+
+    infiles = []
+    for arg in args:
+        if not re.match(r'^.*\.ubam', arg):
+            raise RuntimeError(f"{arg} have a wrong suffix, should be '.ubam'")
+        if not os.path.isfile(arg):
+            raise RuntimeError(f"cannot find {arg}")
+        arg = os.path.abspath(arg)
+        infiles.append(arg)
+
+    indata = [f'sample_and_unmapped_bams.sample_name={name}',
+              "sample_and_unmapped_bams.unmapped_bam_suffix=.ubam",
+              f"sample_and_unmapped_bams.base_filename={name}",
+              "scatter_settings.haplotype_scatter_count=10",
+              "scatter_settings.break_bands_at_multiples_of=0"
+            ]
+
+    data = json_utils.build_json(indata, "DNAProcessing")
+
+    data["BwaProcessing"]['sample_and_unmapped_bams']['unmapped_bams'] = []
+    for infile in infiles:
+        data["BwaProcessing"]['sample_and_unmapped_bams']['unmapped_bams'].append( infile )
+
+    
+    data = json_utils.add_jsons(data, [reference], "BwaProcessing")
+    data = json_utils.pack(data, 2)
+
+    tmp_inputs = write_tmp_json( data )
+    tmp_options = outdir_json( outdir )
+    tmp_labels = labels_json(workflow='bwaprocessing', env=env,sample=name, outdir=outdir)
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
+
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+
+
+
 def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
 
     name = args_utils.get_or_fail(args, "Sample name is missing")
