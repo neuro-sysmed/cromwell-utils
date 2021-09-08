@@ -45,25 +45,34 @@ nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 outdir = None
 
 
-wf_files = {'exome': f'{nsm_root}/workflows/dna_pipeline.wdl',
-            'star': f'{nsm_root}/workflows/star.wdl',
-            'salmon': f'{nsm_root}/workflows/salmon.wdl',
-            'haplotype': f'{nsm_root}/workflows/haplotype_caller.wdl',
-            'jointgenotyping': f'{nsm_root}/workflows/joint_genotyping.wdl',
+wf_files = {'exome': f'workflows/dna_pipeline.wdl',
+            'star': f'workflows/star.wdl',
+            'salmon': f'workflows/salmon.wdl',
+            'haplotype': f'workflows/haplotype_caller.wdl',
+            'jointgenotyping': f'workflows/joint_genotyping.wdl',
+            'bwa_alignment': f'workflows/bwa_alignment.wdl',
 
-            'bam-to-ubam': f'{nsm_root}/utils/bam_to_ubam.wdl',
-            'fqs-to-ubam': f'{nsm_root}/utils/fqs_to_ubam.wdl',
-            'fastqc': f'{nsm_root}/utils/fastqc.wdl',}
+            'bam-to-ubam': f'utils/bam_to_ubam.wdl',
+            'fqs-to-ubam': f'utils/fqs_to_ubam.wdl',
+            'fastqc': f'utils/fastqc.wdl',
+            }
 
 
 
 def init(config:dict) -> None:
-    global reference, nsm_root, nsm_zip, env, outdir
+    global reference, nsm_root, nsm_zip, env, outdir, wf_files
+
+    reference_dir = f"{config.reference_dir}/"
+
+    if config.nsm_analysis_root:
+        nsm_root = config.nsm_analysis_root
 
     if config.development:
         env = 'development'
+        nsm_root = '/home/brugger/projects/nsm/nsm-analysis'
+        reference_dir = '/home/brugger/refs/'
+        nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 
-    reference_dir = f"{config.reference_dir}/"
 
     if config.reference == 'hg38':
         reference = f'{reference_dir}reference_hg38.json'
@@ -77,8 +86,6 @@ def init(config:dict) -> None:
     if env != 'development' and (not os.path.isfile( reference ) and not os.path.isdir(reference)):
         raise RuntimeError(f'reference-file/dir {reference} does not exist')
 
-    if config.nsm_analysis_root:
-        nsm_root = config.nsm_analysis_root
 
     if env != 'development' and not os.path.isdir( nsm_root ):
         raise RuntimeError(f'nsm-analysis root dir {nsm_root} does not exist')
@@ -94,6 +101,11 @@ def init(config:dict) -> None:
     elif config.no_export == False:
         outdir = os.getcwd()
 
+
+    for wf in wf_files:
+        wf_files[ wf ] = f"{nsm_root}/{wf_files[ wf ]}"
+
+
     if env == 'development':
         print("environment:\n------------")
         print(f' reference --> {reference}')
@@ -108,7 +120,7 @@ def init(config:dict) -> None:
 
 def dna_subcmd(args:list) -> None:
 
-    commands = {'e':'exome', 'es': 'exomes', 'g':'genome', 'gs':'genomes','b':'bwa', 'h': 'help'}
+    commands = {'e':'exome', 'es': 'exomes', 'g':'genome', 'gs':'genomes', 'ha':'haplotype', 'b':'bwa', 'h': 'help'}
     args_utils.min_count(1, len(args),
                          msg="nsm-analysis dna takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
@@ -119,7 +131,9 @@ def dna_subcmd(args:list) -> None:
     elif command == 'exomes' or command == 'genomes':
         analysis.exomes_genomes(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     elif command == 'bwa':
-        analysis.bwa(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.bwa(args=args, reference=reference, wdl_wf=wf_files['bwa_alignment'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    elif command == 'haplotype':
+        analysis.haplotypecaller(args=args, reference=reference, wdl_wf=wf_files['haplotype'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     else:
         print("Help:")
         print("Exomes/genomes/alignment from unaligned bams (ubams)")
@@ -157,16 +171,16 @@ def rna_subcmd(args:list) -> None:
 
 def variants_subcmd(args:list) -> None:
 
-    commands = {'s':'single', 'j':'joint', 'h': 'help'}
+    commands = {'g':'genotype', 'j':'joint', 'h': 'help'}
     args_utils.min_count(1, len(args),
                          msg="nsm-analysis variants takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
-    if command == 'single':
-        analysis.haplotypecaller(args=args, reference=reference, wdl_wf=wf_files['haplotype'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    if command == 'genotype':
+        analysis.genotype(args=args, reference=reference, wdl_wf=wf_files['genotypetype'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     elif command == 'joint':
-        analysis.joint_vcf_calling(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.joint_vcf_calling(args=args, reference=reference, wdl_wf=wf_files['jointgenotyping'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     else:
         print("Help:")
         print("variant calling bam files")

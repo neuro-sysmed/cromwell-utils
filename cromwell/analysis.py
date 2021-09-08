@@ -5,6 +5,8 @@ import json
 import tempfile
 import getpass
 
+import pprint as pp
+
 import kbr.args_utils as args_utils
 import kbr.version_utils as version_utils
 import kbr.string_utils as string_utils
@@ -31,7 +33,26 @@ def find_bam_index(bamfile:str) -> str:
     elif os.path.isfile(index_file):
         return index_file
     else:
-        raise RuntimeError(f"Index file for amfile {bamfile} not found! [{index_file},{bamfile+'.bai'}")
+        raise RuntimeError(f"Index file for bamfile {bamfile} not found! [{index_file},{bamfile+'.bai'}")
+
+
+
+def find_vcf_index(vcffile:str) -> str:
+
+    if not os.path.isfile(vcffile):
+        raise RuntimeError(f"vcffile {vcffile} not found!")
+
+    index_file = vcffile.replace(".gz", ".tbi")
+
+
+    if os.path.isfile(vcffile+".tbi"):
+        return vcffile+".tbi"
+    elif os.path.isfile(vcffile+".idx"):
+        return vcffile+".idx"
+    elif os.path.isfile(index_file):
+        return index_file
+    else:
+        raise RuntimeError(f"Index file for vcffile {vcffile} not found! [{index_file}]")
 
 
 
@@ -94,8 +115,8 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
 
 
     if analysis == 'genome':
-        indata['WGS'] = True
-        indata['doBSQR'] = True
+        indata.append('WGS=true')
+        indata.append('doBSQR=true')
 
     data = json_utils.build_json(indata, "DNAProcessing")
 
@@ -148,11 +169,9 @@ def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None,
     indata = [f'sample_and_unmapped_bams.sample_name={name}',
               "sample_and_unmapped_bams.unmapped_bam_suffix=.ubam",
               f"sample_and_unmapped_bams.base_filename={name}",
-              "scatter_settings.haplotype_scatter_count=10",
-              "scatter_settings.break_bands_at_multiples_of=0"
             ]
 
-    data = json_utils.build_json(indata, "DNAProcessing")
+    data = json_utils.build_json(indata, "BwaProcessing")
 
     data["BwaProcessing"]['sample_and_unmapped_bams']['unmapped_bams'] = []
     for infile in infiles:
@@ -164,7 +183,7 @@ def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None,
 
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='bwaprocessing', env=env,sample=name, outdir=outdir)
+    tmp_labels = labels_json(workflow='bwa_alignment', env=env,sample=name, outdir=outdir)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
@@ -177,16 +196,15 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
 
     name = args_utils.get_or_fail(args, "Sample name is missing")
     bamfile = args_utils.get_or_fail(args, "bamfile is missing")
+    bamfile = os.path.abspath( bamfile )
+
     bam_index = find_bam_index( bamfile )
 
-    infiles = []
-    for arg in args:
-        if not re.match(r'^.*\.ubam', arg):
-            raise RuntimeError(f"{arg} have a wrong suffix, should be '.ubam'")
-        if not os.path.isfile(arg):
-            raise RuntimeError(f"cannot find {arg}")
-        arg = os.path.abspath(arg)
-        infiles.append(arg)
+    if not os.path.isfile(bamfile):
+        raise RuntimeError(f"cannot find {bamfile}")
+
+    if not os.path.isfile(bam_index):
+        raise RuntimeError(f"cannot find {bam_index}")
 
     indata = [f'input_bam={bamfile}',
               f'input_bam_index={bam_index}',
@@ -208,6 +226,69 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
     del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+
+
+def joint_vcf_calling(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+
+    callset_name = args_utils.get_or_fail(args, "Callset.output name is missing")
+    samples_map = args_utils.get_or_fail(args, "sample-map file is missing (format: sample<tab>path)")
+    samples_map = os.path.abspath( samples_map ) 
+
+    indata = [f'callset_name={callset_name}',
+              f'sample_name_map={samples_map}',              
+            ]
+
+    data = json_utils.build_json(indata, "JointGenotyping")
+    data = json_utils.add_jsons(data, [reference], "JointGenotyping")
+    data["JointGenotyping"]["snp_recalibration_tranche_values"] = ["100.0", "99.95", "99.9", "99.8", "99.7", "99.6", "99.5", "99.4", "99.3", "99.0", "98.0", "97.0", "90.0" ]
+    data["JointGenotyping"]["snp_recalibration_annotation_values"] = ["AS_QD", "AS_MQRankSum", "AS_ReadPosRankSum", "AS_FS", "AS_MQ", "AS_SOR"]
+    data["JointGenotyping"]["indel_recalibration_tranche_values"] = ["100.0", "99.95", "99.9", "99.5", "99.0", "97.0", "96.0", "95.0", "94.0", "93.5", "93.0", "92.0", "91.0", "90.0"]
+    data["JointGenotyping"]["indel_recalibration_annotation_values"] = ["AS_FS", "AS_ReadPosRankSum", "AS_MQRankSum", "AS_QD", "AS_SOR"]
+    data["JointGenotyping"]["snp_filter_level"] = 99.7
+    data["JointGenotyping"]["indel_filter_level"] = 95.0
+    data["JointGenotyping"]["SNP_VQSR_downsampleFactor"] = 10
+    data = json_utils.pack(data, 2)
+
+    tmp_inputs = write_tmp_json( data )
+    tmp_options = outdir_json( outdir )
+    tmp_labels = labels_json(workflow='joint_variant_calling', env=env, sample=callset_name, outdir=outdir)
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
+
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+#    print( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+
+
+def genotype(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+
+    name = args_utils.get_or_fail(args, "Sample name is missing")
+    gvcf_file = args_utils.get_or_fail(args, "bamfile is missing")
+    gvcf_file = os.path.abspath( gvcf_file )
+    gvcf_index = find_vcf_index( gvcf_file )
+
+    indata = [f'sample_name={sample_name}',
+              f'gvcf_file={gvc_file}',              
+              f'gvcf_file_index={gvc_index}',              
+            ]
+
+    data = json_utils.build_json(indata, "GvcfGenotyping")
+    data = json_utils.add_jsons(data, [reference], "GvcfGenotyping")
+    data = json_utils.pack(data, 2)
+
+    tmp_inputs = write_tmp_json( data )
+    tmp_options = outdir_json( outdir )
+    tmp_labels = labels_json(workflow='joint_variant_calling', env=env, sample=callset_name, outdir=outdir)
+    tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
+
+    st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
+    print(f"{st['id']}: {st['status']}")
+    del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+#    print( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
+
+
+
+
 
 def bams_to_ubams(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
     
