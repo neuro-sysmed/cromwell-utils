@@ -303,7 +303,7 @@ def workflows_subcmd(args, limit:int=-1, ids_only:bool=False) -> None:
         res = sorted(res, key=lambda x: x[3], reverse=True)
 
         if int(limit) > 0:
-            res = res[0:int(limit)]
+            res = res[0:int(limit)+1]
 
         if ids_only:
             for r in res[1:]:
