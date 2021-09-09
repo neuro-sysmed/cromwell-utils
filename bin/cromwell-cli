@@ -306,7 +306,7 @@ def workflows_subcmd(args, limit:int=-1, ids_only:bool=False) -> None:
             res = res[0:int(limit)]
 
         if ids_only:
-            for r in res:
+            for r in res[1:]:
                 print(r[0])
         else:
             print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
