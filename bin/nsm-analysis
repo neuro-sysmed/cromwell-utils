@@ -50,6 +50,7 @@ wf_files = {'exome': f'workflows/dna_pipeline.wdl',
             'salmon': f'workflows/salmon.wdl',
             'haplotype': f'workflows/haplotype_caller.wdl',
             'jointgenotyping': f'workflows/joint_genotyping.wdl',
+            'genotype_gvcf': f'workflows/genotype_gvcf.wdl',
             'bwa_alignment': f'workflows/bwa_alignment.wdl',
 
             'bam-to-ubam': f'utils/bam_to_ubam.wdl',
@@ -171,14 +172,14 @@ def rna_subcmd(args:list) -> None:
 
 def variants_subcmd(args:list) -> None:
 
-    commands = {'g':'genotype', 'j':'joint', 'h': 'help'}
+    commands = {'g':'genotype-gvcf', 'j':'joint', 'h': 'help'}
     args_utils.min_count(1, len(args),
                          msg="nsm-analysis variants takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
-    if command == 'genotype':
-        analysis.genotype(args=args, reference=reference, wdl_wf=wf_files['genotypetype'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+    if command == 'genotype-gvcf':
+        analysis.genotype_gvcf(args=args, reference=reference, wdl_wf=wf_files['genotype_gvcf'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     elif command == 'joint':
         analysis.joint_vcf_calling(args=args, reference=reference, wdl_wf=wf_files['jointgenotyping'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     else:
@@ -239,7 +240,7 @@ def main():
     parser.add_argument('-r', '--reference', help="reference to use: hg38(default), hg19", default="hg38")
     parser.add_argument('-o', '--outdir', help="where to export results to, default working directory")
 
-    parser.add_argument('-R', '--reference-dir', help="reference dir", default="/data/refs")
+    parser.add_argument('-R', '--reference-dir', help="reference dir", default="/data/refs/")
     parser.add_argument('-n', '--nsm-analysis-root', help="location of nsm-analysis", default="/usr/local/lib/nsm-analysis")
     parser.add_argument('--no-export', help="Dont export results", action="store_true", default=False)
     parser.add_argument('-z', '--zipfile', help="wdl zipfile with tasks")

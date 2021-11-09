@@ -260,32 +260,32 @@ def joint_vcf_calling(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, ou
 #    print( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
 
 
-def genotype(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
 
-    name = args_utils.get_or_fail(args, "Sample name is missing")
-    gvcf_file = args_utils.get_or_fail(args, "bamfile is missing")
+def genotype_gvcf(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+
+    sample_name = args_utils.get_or_fail(args, "Sample name is missing")
+    gvcf_file = args_utils.get_or_fail(args, "gvcf-file is missing")
     gvcf_file = os.path.abspath( gvcf_file )
     gvcf_index = find_vcf_index( gvcf_file )
 
     indata = [f'sample_name={sample_name}',
-              f'gvcf_file={gvc_file}',              
-              f'gvcf_file_index={gvc_index}',              
+              f'gvcf_file={gvcf_file}',              
+              f'gvcf_file_index={gvcf_index}',              
             ]
 
-    data = json_utils.build_json(indata, "GvcfGenotyping")
-    data = json_utils.add_jsons(data, [reference], "GvcfGenotyping")
+    data = json_utils.build_json(indata, "GenotypeGvcf")
+    data = json_utils.add_jsons(data, [reference], "GenotypeGvcf")
     data = json_utils.pack(data, 2)
 
     tmp_inputs = write_tmp_json( data )
     tmp_options = outdir_json( outdir )
-    tmp_labels = labels_json(workflow='joint_variant_calling', env=env, sample=callset_name, outdir=outdir)
+    tmp_labels = labels_json(workflow='genotyping_gvcf', env=env, sample=sample_name, outdir=outdir)
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
     print(f"{st['id']}: {st['status']}")
     del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
 #    print( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
-
 
 
 
