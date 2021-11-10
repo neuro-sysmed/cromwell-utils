@@ -118,6 +118,13 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
         indata.append('WGS=true')
         indata.append('doBSQR=true')
 
+    if True:
+        indata.append("bwa_module=bwa")
+        indata.append("samtools_module=samtools/1.12")
+        indata.append("picard_module=picard/1.12")
+        indata.append("gatk_module=gatk/1.12")
+
+
     data = json_utils.build_json(indata, "DNAProcessing")
 
     data["DNAProcessing"]['sample_and_unmapped_bams']['unmapped_bams'] = []
