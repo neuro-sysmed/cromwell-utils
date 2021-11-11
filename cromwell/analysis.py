@@ -92,7 +92,7 @@ def del_files(*files) -> None:
         if f is not None and os.path.isfile( f ):
             os.remove(f)
 
-def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None) -> None:
 
     name = args_utils.get_or_fail(args, "Sample name is missing")
     args_utils.min_count(1, len(args), msg="One or more ubams required.")
@@ -118,12 +118,13 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
         indata.append('WGS=true')
         indata.append('doBSQR=true')
 
-    if True:
-        indata.append("bwa_module=bwa")
-        indata.append("samtools_module=samtools/1.12")
-        indata.append("picard_module=picard")
-        indata.append("gatk_module=gatk")
+    print(programs)
 
+    for program in ["bwa", "samtools", "picard", "gatk"]:
+        if programs is not None and f"{program}" in programs:
+            indata.append(f"{program}_module={programs[ program ]}")
+        else:
+            indata.append(f"{program}_module={program}")
 
     data = json_utils.build_json(indata, "DNAProcessing")
 
@@ -184,6 +185,12 @@ def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None,
     for infile in infiles:
         data["BwaProcessing"]['sample_and_unmapped_bams']['unmapped_bams'].append( infile )
 
+    for program in ["bwa", "samtools", "picard", "gatk"]:
+        if programs is not None and f"{program}" in programs:
+            indata.append(f"{program}_module={programs[ program ]}")
+        else:
+            indata.append(f"{program}_module={program}")
+
     
     data = json_utils.add_jsons(data, [reference], "BwaProcessing")
     data = json_utils.pack(data, 2)
@@ -199,7 +206,7 @@ def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None,
 
 
 
-def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None) -> None:
 
     name = args_utils.get_or_fail(args, "Sample name is missing")
     bamfile = args_utils.get_or_fail(args, "bamfile is missing")
@@ -221,6 +228,13 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
             ]
 
 
+    for program in ["samtools", "picard", "gatk"]:
+        if programs is not None and f"{program}" in programs:
+            indata.append(f"{program}_module={programs[ program ]}")
+        else:
+            indata.append(f"{program}_module={program}")
+
+
     data = json_utils.build_json(indata, "VariantCalling")
     data = json_utils.add_jsons(data, [reference], "VariantCalling")
     data = json_utils.pack(data, 2)
@@ -235,7 +249,7 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
     del_files( tmp_inputs, tmp_options, tmp_labels, tmp_wf_file)
 
 
-def joint_vcf_calling(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+def joint_vcf_calling(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None) -> None:
 
     callset_name = args_utils.get_or_fail(args, "Callset.output name is missing")
     samples_map = args_utils.get_or_fail(args, "sample-map file is missing (format: sample<tab>path)")
@@ -244,6 +258,14 @@ def joint_vcf_calling(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, ou
     indata = [f'callset_name={callset_name}',
               f'sample_name_map={samples_map}',              
             ]
+
+
+    for program in ["picard", "gatk"]:
+        if programs is not None and f"{program}" in programs:
+            indata.append(f"{program}_module={programs[ program ]}")
+        else:
+            indata.append(f"{program}_module={program}")
+
 
     data = json_utils.build_json(indata, "JointGenotyping")
     data = json_utils.add_jsons(data, [reference], "JointGenotyping")
@@ -268,7 +290,7 @@ def joint_vcf_calling(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, ou
 
 
 
-def genotype_gvcf(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+def genotype_gvcf(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None) -> None:
 
     sample_name = args_utils.get_or_fail(args, "Sample name is missing")
     gvcf_file = args_utils.get_or_fail(args, "gvcf-file is missing")
@@ -279,6 +301,13 @@ def genotype_gvcf(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir
               f'gvcf_file={gvcf_file}',              
               f'gvcf_file_index={gvcf_index}',              
             ]
+
+    for program in ["picard", "gatk"]:
+        if programs is not None and f"{program}" in programs:
+            indata.append(f"{program}_module={programs[ program ]}")
+        else:
+            indata.append(f"{program}_module={program}")
+
 
     data = json_utils.build_json(indata, "GenotypeGvcf")
     data = json_utils.add_jsons(data, [reference], "GenotypeGvcf")
@@ -297,13 +326,20 @@ def genotype_gvcf(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir
 
 
 
-def bams_to_ubams(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
+def bams_to_ubams(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None ) -> None:
     
     tmp_options = outdir_json( outdir )
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
 
     for arg in args:
         data = {"BamToUnalignedBam.input_bam": os.path.abspath( arg )}
+
+        for program in ["picard"]:
+            if programs is not None and f"{program}" in programs:
+                data.append(f"{program}_module={programs[ program ]}")
+            else:
+                data.append(f"{program}_module={program}")
+
         tmp_inputs = write_tmp_json( data )
         tmp_labels = labels_json(workflow='bams-to-ubams', env=env, sample=arg, outdir=outdir)
         st = cromwell_api.submit_workflow(wdl_file=tmp_wf_file, inputs=[tmp_inputs], options=tmp_options, labels=tmp_labels, dependency=wdl_zip)
@@ -313,13 +349,11 @@ def bams_to_ubams(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:s
     del_files( tmp_options, tmp_wf_file)
 
 
-def fqs_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
+def fqs_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None ) -> None:
     
     out_name = args_utils.get_or_fail(args, "Missing out name")
     fq_fwd = args_utils.get_or_fail(args, "Missing fwd FQ file")
     fq_rev = args_utils.get_or_default( args, None)
-
-    
 
     data = {"FqToUnalignedBam.fq_fwd": fq_fwd, 
             "FqToUnalignedBam.out_name": out_name,
@@ -330,6 +364,14 @@ def fqs_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str
 
     if fq_rev is not None:
         data["FqToUnalignedBam.fq_rev"] = fq_rev 
+
+
+    for program in ["picard"]:
+        if programs is not None and f"{program}" in programs:
+            data.append(f"{program}_module={programs[ program ]}")
+        else:
+            data.append(f"{program}_module={program}")
+
 
     tmp_options = outdir_json( outdir )
     tmp_wf_file = cromwell_utils.fix_wdl_workflow_imports(wdl_wf)
@@ -342,7 +384,7 @@ def fqs_to_ubam(args:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str
 
 
 
-def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None ) -> None:
+def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None ) -> None:
 
     name = args_utils.get_or_fail(args, "Sample name is missing")
     fwd_reads = args_utils.get_or_fail(args, "fwd-reads file missing")
@@ -355,6 +397,14 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
               "Salmon.fwd_reads": os.path.abspath(fwd_reads),
               "Salmon.threads": 6,
               "Salmon.reference_dir": reference}
+
+
+    for program in ["salmon"]:
+        if programs is not None and f"{program}" in programs:
+            indata.append(f"{program}_module={programs[ program ]}")
+        else:
+            indata.append(f"{program}_module={program}")
+
 
     if rev_reads is not None:
         indata["Salmon.rev_reads"] = os.path.abspath(rev_reads)

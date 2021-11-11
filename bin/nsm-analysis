@@ -44,6 +44,7 @@ nsm_root = '/usr/local/lib/nsm-analysis'
 nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 outdir = None
 
+programs = {}
 
 wf_files = {'exome': f'workflows/dna_pipeline.wdl',
             'star': f'workflows/star.wdl',
@@ -97,6 +98,18 @@ def init(config:dict) -> None:
     if env != 'development' and  not os.path.isfile( nsm_zip ):
         raise RuntimeError(f'nsm-zipfile {nsm_zip} does not exist')
 
+
+    if config.programs is not None:
+        global programs
+        for program in config.programs.split(","):
+            if "/" not in program:
+                print("programs should be defined in the form of: program1/version,program2/version")
+                sys.exit()
+            else:
+                p, version = program.split("/")
+                programs[ p ] = program
+
+
     if config.outdir:
         outdir = config.ourdir
     elif config.no_export == False:
@@ -128,13 +141,13 @@ def dna_subcmd(args:list) -> None:
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
     if command == 'exome' or command == 'genome':
-        analysis.exome_genome(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.exome_genome(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     elif command == 'exomes' or command == 'genomes':
-        analysis.exomes_genomes(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.exomes_genomes(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     elif command == 'bwa':
-        analysis.bwa(args=args, reference=reference, wdl_wf=wf_files['bwa_alignment'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.bwa(args=args, reference=reference, wdl_wf=wf_files['bwa_alignment'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     elif command == 'haplotype':
-        analysis.haplotypecaller(args=args, reference=reference, wdl_wf=wf_files['haplotype'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.haplotypecaller(args=args, reference=reference, wdl_wf=wf_files['haplotype'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     else:
         print("Help:")
         print("Exomes/genomes/alignment from unaligned bams (ubams)")
@@ -157,9 +170,9 @@ def rna_subcmd(args:list) -> None:
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
     if command == 'star':
-        analysis.star(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.star(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     elif command == 'salmon':
-        analysis.salmon(args=args, reference=reference, wdl_wf=wf_files['salmon'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.salmon(args=args, reference=reference, wdl_wf=wf_files['salmon'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     else:
         print("Help:")
         print("RNAseq alignment/count from fastq files")
@@ -179,9 +192,9 @@ def variants_subcmd(args:list) -> None:
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
     if command == 'genotype-gvcf':
-        analysis.genotype_gvcf(args=args, reference=reference, wdl_wf=wf_files['genotype_gvcf'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.genotype_gvcf(args=args, reference=reference, wdl_wf=wf_files['genotype_gvcf'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     elif command == 'joint':
-        analysis.joint_vcf_calling(args=args, reference=reference, wdl_wf=wf_files['jointgenotyping'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.joint_vcf_calling(args=args, reference=reference, wdl_wf=wf_files['jointgenotyping'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     else:
         print("Help:")
         print("variant calling bam files")
@@ -213,11 +226,11 @@ def utils_subcmd(args:list) -> None:
     command = args_utils.valid_command(command, commands)
 
     if command == 'fqs-to-ubam':
-        analysis.fqs_to_ubam(args=args, wdl_wf=wf_files['fqs-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.fqs_to_ubam(args=args, wdl_wf=wf_files['fqs-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
 #    elif command == 'bams-to-ubam':
 #        analysis.bams_to_ubam(args=args, wdl_wf=wf_files['to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
     elif command == 'bams-to-ubams':
-        analysis.bams_to_ubams(args=args, wdl_wf=wf_files['bam-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, )
+        analysis.bams_to_ubams(args=args, wdl_wf=wf_files['bam-to-ubam'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     else:
         print("Help:")
         print("Upstream analysis utils")
@@ -246,6 +259,7 @@ def main():
     parser.add_argument('-z', '--zipfile', help="wdl zipfile with tasks")
     parser.add_argument('-v', '--verbose', default=0, action="count", help="Increase the verbosity of logging output")
     parser.add_argument('-D','--development', help="running environment", action="store_true", default=False)
+    parser.add_argument('-P','--programs', help="overriding default programs to use in the pipeline", default=None)
     parser.add_argument('command', nargs='*', help="{}".format(args_utils.pretty_commands(commands)))
 
     args = parser.parse_args()
