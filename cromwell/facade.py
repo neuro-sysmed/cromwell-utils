@@ -501,6 +501,7 @@ def wf_dirsizes(ids:list=None, time_type:str=None, time_span:str=None, ) -> None
     res = [["id", "name", "size", "path"]]
     for id in ids:
         workflow = cromwell_api.workflow_meta(wf_id = id )
+        print( workflow )
         wf_rootdir = workflow['workflowRoot']
         size = directory_size( wf_rootdir )
         res.append([id, string_utils.readable_bytes(size), 
