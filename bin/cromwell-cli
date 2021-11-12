@@ -62,7 +62,7 @@ def cromwell_info() -> None:
 def workflow_subcmd(args) -> None:
     commands = {'s': 'submit', 'b': 'batch', 'st': 'status', 'a':'abort', 'r':'resubmit', 'l': 'logs',
                     'o':'outputs',  'm':'meta', 'lg': 'labels-get', 'ls': 'labels-set', 'e': 'export', 
-                    'f':'fails', 'O': 'Overview', 'h':'help'} #'t': 'timing',
+                    'f':'fails', 'ov': 'overview', 'h':'help'} #'t': 'timing',
 
 
     args_utils.min_count(1, len(args),
@@ -264,6 +264,7 @@ def workflows_subcmd(args, limit:int=-1, ids_only:bool=False) -> None:
         
         print("Help:")
         print("Fetches information/status for workflow(s), can be filtered in various ways")
+        print("informatin can be shown as brief or meta for an overview")
         print("==========================")
         print("workflows [all])")
         print("monitor last <count, default 10>")

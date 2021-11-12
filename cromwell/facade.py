@@ -495,20 +495,23 @@ def workflow_overview(args:list, as_json:bool=False) -> None:
 
     args_utils.min_count(1, len(args), 1, msg="one or more workflow id is required")
     jsons = []
+    res = [["id", "name", "status", ]]
     for wf_id in args:
         st = cromwell_api.workflow_meta(wf_id)
 
         if 'calls' in st:
             for call in st['calls']:
                 for shard in st['calls'][call]:
-                   print(f"{wf_id}\t{call}\t{shard['executionStatus']}")
+                    res.append([wf_id, call,shard['executionStatus']])
+#                   print(f"{wf_id}\t{call}\t{shard['executionStatus']}")
+
+                    jsons.append( { 'id':wf_id, "call":call,"status":shard['executionStatus']})
 
 
 
-#        if as_json:
-#            jsons.append( st )
-
-#    if as_json:
-#        print(json.dumps(jsons))
+    if as_json:
+        print(json.dumps(jsons))
+    else:
+        print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
 
