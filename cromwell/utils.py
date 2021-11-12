@@ -145,6 +145,9 @@ def patch_version_location(path:str=".") -> None:
 
 
 def is_id(value:str) -> bool:
+    if value is None:
+        return False 
+        
     if re.match(r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', value):
         return True
     return False

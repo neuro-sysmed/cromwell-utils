@@ -12,6 +12,7 @@ import pytz
 import kbr.args_utils as args_utils
 import kbr.datetime_utils as datetime_utils
 import kbr.file_utils as file_utils
+import kbr.string_utils as string_utils
 
 import cromwell.api as cromwell_api
 
@@ -395,10 +396,12 @@ def cleanup_workflow(action:str, wf_id:str, keep_running_wfs:bool=True) -> None:
         print(f"Deleted everything in {rootdir}")
         return
 
+    # collect output files
     if 'outputs' in meta:
         for output in meta['outputs']:
             outputs[ output ] = meta['outputs'][output]
 
+    # worth keeping these for long term tracking
     wf_keep_files = ["rc","stdout.submit", "stderr.submit", "script",
                      "stdout", "stderr", "script.submit" ]
 
@@ -421,9 +424,9 @@ def cleanup_workflow(action:str, wf_id:str, keep_running_wfs:bool=True) -> None:
                 continue
 
             if action == 'tmpfiles':
-                delete_workflow_files( shard_rootdir, list(output_files + wf_keep_files))
+                delete_workflow_files( shard_rootdir, keep_list=list(output_files + wf_keep_files))
             elif action == 'files':
-                delete_workflow_files( shard_rootdir, wf_keep_files)
+                delete_workflow_files( shard_rootdir, keep_list=wf_keep_files)
             else:
                 raise RuntimeError(f'{action} is an unknown cleanup action, allowed: tmpfiles, files or nuke')
 
@@ -464,6 +467,47 @@ def cleanup(action:str, ids:list=None, time_type:str=None, time_span:str=None, )
     for id in ids:
         cleanup_workflow(action=action, wf_id=id, keep_running_wfs=keep_running)
         workflow_labels_set(id, [f"cleanup:{action}"])
+
+
+def directory_size(start_path:str = '.') -> int:
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size
+
+def wf_dirsizes(ids:list=None, time_type:str=None, time_span:str=None, ) -> None:
+
+
+    if ids is None and time_type:
+        if time_type == 'days':
+            to_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(days=int(time_span)) )
+        elif time_type == 'hours':
+            to_date = datetime_utils.to_string( datetime.now(pytz.utc) - timedelta(hours=int(time_span)) )
+
+        workflows_data = workflows(to_date=to_date, as_json=True, query=True)
+        ids = []
+        for workflow in workflows_data:
+            ids.append(workflow['id'])
+
+    elif ids is None:
+        workflows_data = workflows(as_json=True, query=True)
+
+        ids = []
+        for workflow in workflows_data:
+            ids.append(workflow['id'])
+
+    res = [["id", "name", "size", "path"]]
+    for id in ids:
+        workflow = cromwell_api.workflow_meta(wf_id = id )
+        wf_rootdir = workflow['workflowRoot']
+        size = directory_size( wf_rootdir )
+        res.append([id, string_utils.readable_bytes(size), 
+                    workflow['workflowName'], wf_rootdir])
+
+
+    print( tabulate.tabulate(res, headers="firstrow", tablefmt='psql'))
 
 
 def workflow_fails(args:list, as_json:bool=False) -> None:

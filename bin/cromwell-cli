@@ -314,10 +314,27 @@ def workflows_subcmd(args, limit:int=-1, ids_only:bool=False) -> None:
 
 
 
+
+def valid_command(command:str, commands:any, msg:str=None) -> str:
+
+    full_commands = commands
+
+    if isinstance(commands, dict):
+        full_commands = commands.values()
+        if  command in commands:
+            command = commands[ command ]
+        
+
+    if command not in full_commands:
+        return False
+
+    return command
+
+
 def cleanup_subcmd(args) -> None:
 
 
-    commands = {'t': 'tmpfiles', 'f': 'files', 'n':'nuke', 'h':'help'}
+    commands = {'t': 'tmpfiles', 'f': 'files', 'n':'nuke', 's':'wf-size', 'h':'help'}
     args_utils.min_count(1, len(args),
                          msg="cleanup takes one of the following commands: {}".format(args_utils.pretty_commands(commands)))
 
@@ -332,6 +349,19 @@ def cleanup_subcmd(args) -> None:
             value = args_utils.valid_command(value, {'d':'days', 'h':'hours'})
             time_span = int(args_utils.get_or_default(args, 2))
             cromwell_facade.cleanup(action=command, time_type=value, time_span=time_span)
+
+    elif command == 'wf-size':
+        value = args_utils.get_or_default(args, None)
+        if cromwell_utils.is_id(value):
+            cromwell_facade.wf_dirsizes(ids=[value] + args)
+        else:
+            value = valid_command(value, {'d':'days', 'h':'hours'})
+            if value is not None:
+                time_span = int(args_utils.get_or_default(args, 2))
+                cromwell_facade.wf_dirsizes(time_type=value, time_span=time_span)
+            else:
+                cromwell_facade.wf_dirsizes()
+
 
     else:
         
