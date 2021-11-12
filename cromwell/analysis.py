@@ -68,7 +68,7 @@ def write_tmp_json(data) -> str:
 
 def outdir_json(outdir:str=None) -> str:
 
-    return None
+#    return None
 
     if outdir is None:
         return None
