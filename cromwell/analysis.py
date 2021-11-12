@@ -234,7 +234,7 @@ def haplotypecaller(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outd
             ]
 
 
-    for program in ["samtools", "picard", "gatk"]:
+    for program in ["picard", "gatk"]:
         if programs is not None and f"{program}" in programs:
             indata.append(f"{program}_module={programs[ program ]}")
         else:
