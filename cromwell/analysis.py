@@ -147,7 +147,7 @@ def exome_genome(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str
 
 
 
-def exomes_genomes(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+def exomes_genomes(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None) -> None:
 
     args_utils.min_count(1, len(args), msg="One or more ubams required.")
 
@@ -155,12 +155,12 @@ def exomes_genomes(analysis:str, args:list, reference:str, wdl_wf:str, wdl_zip:s
         sample_name = re.sub('\..*', '', arg)
         sample_name = re.sub('.*\/', '', sample_name)
         print( sample_name, arg)
-        exome_genome(analysis, [sample_name, arg], reference, wdl_wf, wdl_zip, outdir, env,)
+        exome_genome(analysis, [sample_name, arg], reference, wdl_wf, wdl_zip, outdir, env, programs)
 
 
 
 
-def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None,) -> None:
+def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None, env:str=None, programs:dict=None) -> None:
 
     name = args_utils.get_or_fail(args, "Sample name is missing")
     args_utils.min_count(1, len(args), msg="One or more ubams required.")
@@ -178,6 +178,12 @@ def bwa(args:list, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=None,
               "sample_and_unmapped_bams.unmapped_bam_suffix=.ubam",
               f"sample_and_unmapped_bams.base_filename={name}",
             ]
+
+    for program in ["bwa", "samtools", "picard", "gatk"]:
+        if programs is not None and f"{program}" in programs:
+            indata.append(f"{program}_module={programs[ program ]}")
+        else:
+            indata.append(f"{program}_module={program}")
 
     data = json_utils.build_json(indata, "BwaProcessing")
 
