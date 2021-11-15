@@ -502,9 +502,7 @@ def wf_dirsizes(ids:list=None, time_type:str=None, time_span:str=None, ) -> None
     for id in ids:
         workflow = cromwell_api.workflow_meta(wf_id = id )
         if 'workflowRoot' not in workflow:
-            res.append([id, 0,
-                        workflow['workflowName'], 'NA'])
-
+            continue
         else:
             wf_rootdir = workflow.get('workflowRoot',None)
 
