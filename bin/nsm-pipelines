@@ -80,8 +80,8 @@ def init(config:dict) -> None:
         nsm_root = config.nsm_analysis_root
 
 
-    if env != 'development' and not os.path.isdir("reference-dir"):
-        raise RuntimeError(f'dir {reference} does not exist')
+    if env != 'development' and not os.path.isdir("reference_dir"):
+        raise RuntimeError(f'dir {reference_dir} does not exist')
 
 
     if env != 'development' and not os.path.isdir( nsm_root ):
