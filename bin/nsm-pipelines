@@ -36,6 +36,7 @@ import cromwell.analysis as analysis
 version = version_utils.as_string('cromwell-utils')
 
 reference = "hg38"
+reference_dir = "/data/refs/"
 env = "production"
 #nsm_root = '/usr/local/lib/tmp/nsm-analysis'
 nsm_root = '/usr/local/lib/nsm-analysis'
@@ -62,12 +63,7 @@ wf_files = {'exome': f'workflows/dna_pipeline.wdl',
 
 
 def init(config:dict) -> None:
-    global reference, nsm_root, nsm_zip, env, outdir, wf_files
-
-    reference_dir = f"{config.reference_dir}/"
-
-    if config.nsm_analysis_root:
-        nsm_root = config.nsm_analysis_root
+    global reference, reference_dir, nsm_root, nsm_zip, env, outdir, wf_files
 
     if config.development:
         env = 'development'
@@ -75,15 +71,14 @@ def init(config:dict) -> None:
         reference_dir = '/home/brugger/refs/'
         nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 
+    reference_dir = f"{config.reference_dir}/"
 
-    if config.reference == 'hg38':
-        reference = f'{reference_dir}reference_hg38.json'
-    elif config.reference == 'hg37' or config.reference == 'hg19':
-        reference = f'{reference_dir}reference_hg19.json'
-    elif "gencode" in config.reference: #for salmon!
-        reference = f'{reference_dir}/{config.reference}'
-    elif os.path.isfile(config.reference) or os.path.isdir( config.reference ):
+    if config.reference :
         reference = config.reference
+
+    if config.nsm_analysis_root:
+        nsm_root = config.nsm_analysis_root
+
 
     if env != 'development' and (not os.path.isfile( reference ) and not os.path.isdir(reference)):
         raise RuntimeError(f'reference-file/dir {reference} does not exist')
@@ -108,7 +103,6 @@ def init(config:dict) -> None:
             else:
                 p, version = program.split("/")
                 programs[ p ] = program
-
 
     if config.outdir:
         outdir = config.ourdir
@@ -140,6 +134,18 @@ def dna_subcmd(args:list) -> None:
 
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
+
+    global reference, reference_dir
+
+    if reference in ['hg38', 'grch38']:
+        reference = f'{reference_dir}/reference_hg38.json'
+    elif reference in ['grch37', 'hg37', 'hg19']:
+        reference = f'{reference_dir}/reference_hg19.json'
+    else:
+        print("Unknown reference should be one of the following: hg38, grch38, hg37, grch37 or hg19")
+
+
+
     if command == 'exome' or command == 'genome':
         analysis.exome_genome(analysis=command, args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     elif command == 'exomes' or command == 'genomes':
@@ -169,9 +175,31 @@ def rna_subcmd(args:list) -> None:
 
     command = args.pop(0)
     command = args_utils.valid_command(command, commands)
+
+
+    global reference
+
+
+#    elif "gencode" in config.reference: #for salmon!
+#        reference = f'{reference_dir}/{config.reference}'
+#    elif os.path.isfile(config.reference) or os.path.isdir( config.reference ):
+#        reference = config.reference
+
+
     if command == 'star':
+        print("Don't know how to set reference for star yet, help me")
+        sys.exit()
         analysis.star(args=args, reference=reference, wdl_wf=wf_files['exome'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     elif command == 'salmon':
+
+        # default reference for salmon, really a hack
+        if reference == 'hg38':
+            reference = f'{reference_dir}/salmon/gencode38'
+        elif 'gencode' in reference:
+            reference = f'{reference_dir}/salmon/{reference}'
+        else:
+            print("Unknown reference should be one of the following: gencode38")
+
         analysis.salmon(args=args, reference=reference, wdl_wf=wf_files['salmon'], wdl_zip=nsm_zip, outdir=outdir, env=env, programs=programs)
     else:
         print("Help:")
