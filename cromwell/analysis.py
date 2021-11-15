@@ -396,8 +396,6 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
     fwd_reads = args_utils.get_or_fail(args, "fwd-reads file missing")
     rev_reads = args_utils.get_or_default(args, None)
 
-    tmp_wdl_file = cromwell_utils.patch_workflow_imports_for_running(wdl_wf)
-#    print( tmp_wdl_file )
 
     indata = {'Salmon.sample_name': name,
               "Salmon.fwd_reads": os.path.abspath(fwd_reads),
