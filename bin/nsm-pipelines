@@ -71,7 +71,7 @@ def init(config:dict) -> None:
         reference_dir = '/home/brugger/refs/'
         nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 
-    reference_dir = f"{config.reference_dir}/"
+    reference_dir = f"{config.reference_dir}"
 
     if config.reference :
         reference = config.reference
@@ -80,7 +80,7 @@ def init(config:dict) -> None:
         nsm_root = config.nsm_analysis_root
 
 
-    if env != 'development' and not os.path.isdir("reference_dir"):
+    if env != 'development' and not os.path.isdir(reference_dir):
         raise RuntimeError(f'dir {reference_dir} does not exist')
 
 
