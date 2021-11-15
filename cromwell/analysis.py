@@ -405,9 +405,9 @@ def salmon(args:str, reference:str, wdl_wf:str, wdl_zip:str=None, outdir:str=Non
 
     for program in ["salmon"]:
         if programs is not None and f"{program}" in programs:
-            indata[f"{program}_module"] = programs[ program ]
+            indata[f"Salmon.{program}_module"] = programs[ program ]
         else:
-            indata[f"{program}_module"]= program
+            indata[f"Salmon.{program}_module"]= program
 
 
     if rev_reads is not None:
