@@ -40,7 +40,7 @@ nsm_zip  = f"{nsm_root}/nsm-analysis.zip"
 
 def group_args(args) -> dict:
 
-    res = {'':[]}
+    res = {'rest':[]}
     for arg in args:
         m = re.match(r'(\w):(.+)', arg)
         if m is not None:
